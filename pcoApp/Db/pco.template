@@ -1,0 +1,227 @@
+## pco.template
+## Template database file to control PCO cameras.
+##
+
+include "ADBase.template"
+
+# Overwrite ADBase.template
+record(ao, "$(P)$(R)AcquireTime")
+{
+    field(PREC, "6")
+}
+record(ai, "$(P)$(R)AcquireTime_RBV")
+{
+    field(PREC, "6")
+}
+
+record(mbbo, "$(P)$(R)TriggerMode")
+{
+    field(ZRST, "Auto")
+    field(ZRVL, "0")
+    field(ONST, "Soft")
+    field(ONVL, "1")
+    field(TWST, "Ext + Soft")
+    field(TWVL, "2")
+    field(THST, "Ext Pulse")
+    field(THVL, "3")
+    field(FRST, "Ext Only")
+    field(FRVL, "5")
+}
+record(mbbi, "$(P)$(R)TriggerMode_RBV")
+{
+    field(ZRST, "Auto")
+    field(ZRVL, "0")
+    field(ONST, "Soft")
+    field(ONVL, "1")
+    field(TWST, "Ext + Soft")
+    field(TWVL, "2")
+    field(THST, "Ext Pulse")
+    field(THVL, "3")
+    field(FRST, "Ext Only")
+    field(FRVL, "5")
+}
+
+# Records specific to PCO cameras
+record(bo, "$(P)$(R)TriggerSoftware")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT) 0)PCO_TRIGGER_SOFTWARE")
+   field(ZNAM, "Done")
+   field(ONAM, "Trigger")
+}
+
+record(ao, "$(P)$(R)DelayTime")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynFloat64")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PCO_DELAY_TIME")
+    field(PREC, "6")
+    field(EGU,  "s")
+}
+
+record(ai, "$(P)$(R)DelayTime_RBV") 
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PCO_DELAY_TIME")
+    field(PREC, "6")
+    field(EGU,  "s")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)PixelRate")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_PIX_RATE")
+    field(VAL,  "0")
+    field(ZRST, "N/A")
+    field(ZRVL, "0")
+}
+
+record(mbbi, "$(P)$(R)PixelRate_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOU=1))PCO_PIX_RATE")
+    field(ZRST, "N/A")
+    field(ZRVL, "0")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)AdcMode") 
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_ADC_MODE")
+    field(ZRST, "N/A")
+    field(ZRVL, "0")
+}
+
+record(mbbi, "$(P)$(R)AdcMode_RBV") 
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_ADC_MODE")
+    field(ZRST, "N/A")
+    field(ZRVL, "0")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)CameraSetup") 
+{
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_CAM_SETUP")
+    
+}
+
+record(mbbi, "$(P)$(R)CameraSetup_RBV") 
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_CAM_SETUP")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)ReadoutMode") 
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_READOUT_MODE")
+    field(ZRST, "Single Top Down")
+    field(ZRVL, "0")
+    field(ONST, "Dual Outside In")
+    field(ONVL, "1")
+    field(TWST, "Dual Inside Out")
+    field(TWVL, "2")
+    field(THST, "Dual Bottom Up")
+    field(THVL, "3")
+    field(FRST, "Dual Top Down")
+    field(FRVL, "4")
+}
+
+record(mbbi, "$(P)$(R)ReadoutMode_RBV") 
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_READOUT_MODE")
+    field(ZRST, "Single Top Down")
+    field(ZRVL, "0")
+    field(ONST, "Dual Outside In")
+    field(ONVL, "1")
+    field(TWST, "Dual Inside Out")
+    field(TWVL, "2")
+    field(THST, "Dual Bottom Up")
+    field(THVL, "3")
+    field(FRST, "Dual Top Down")
+    field(FRVL, "4")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)BitAlignment") 
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_BIT_ALIGNMENT")
+    field(ZRST, "MSB")
+    field(ZRVL, "0")
+    field(ONST, "LSB")
+    field(ONVL, "1")
+}
+
+record(mbbi, "$(P)$(R)BitAlignment_RBV") 
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_BIT_ALIGNMENT")
+    field(ZRST, "MSB")
+    field(ZRVL, "0")
+    field(ONST, "LSB")
+    field(ONVL, "1")
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)RebootCamera")
+{
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_REBOOT_CAM")
+    field(ZNAM, "Running")
+    field(ONAM, "Booting")
+}
+
+record(mbbo, "$(P)$(R)AcquireMode") 
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_ACQ_MODE")
+    field(ZRST, "Auto")
+    field(ZRVL, "0")
+    field(ONST, "Ext. enable")
+    field(ONVL, "1")
+    field(TWST, "Ext. modulate")
+    field(TWVL, "2")
+}
+
+record(mbbi, "$(P)$(R)AcquireMode_RBV") 
+{
+    field(DESC, "acquire mode select")
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_ACQ_MODE")
+    field(ZRST, "Auto")
+    field(ZRVL, "0")
+    field(ONST, "Ext. enable")
+    field(ONVL, "1")
+    field(TWST, "Ext. modulate")
+    field(TWVL, "2")
+    field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)FramesDropped_RBV") 
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PCO_FRAMES_DROPPED")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)FramePeriod_RBV") 
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PCO_FRAME_PERIOD")
+    field(PREC, "6")
+    field(EGU,  "s")
+    field(SCAN, "I/O Intr")
+}

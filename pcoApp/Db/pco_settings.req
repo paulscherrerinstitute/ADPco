@@ -1,0 +1,7 @@
+file "ADBase_settings.req", P=$(P), R=$(R)
+$(P)$(R)DelayTime
+$(P)$(R)PixelRate
+$(P)$(R)AdcMode
+$(P)$(R)ReadoutMode
+$(P)$(R)BitAlignment
+$(P)$(R)AcquireMode
