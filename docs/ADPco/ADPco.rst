@@ -67,12 +67,17 @@ specific to ADPco.
      - PCO_ADC_MODE
      - If supported by the camera, sensor data can be read out using either single ADC or two ADCs.
        In single ADC operation linearity of image data is enhanced, using dual ADC operation readout
-       is faster and allows higher frame rates.
+       is faster and allows higher frame rates. The option may appear "N/A" for pco.edge cameras, in such a case
+       ReadoutMode controls the ADC operation.
    * - CameraSetup, CameraSetup_RBV
      - mbbo,mbbi
      - PCO_CAMERA_SETUP
      - The camera shutter mode. Changing this paramter will reboot the camera. The driver will appear disconnected.
        If asyn autoconnect is not disabled, the driver will attempt periodic reconnect.
+   * - ReadoutMode, ReadoutMode_RBV
+     - mbbo,mbbi
+     - PCO_READOUT_MODE
+     - Readout mode for pco.edge cameras in rolling shutter mode.
    * - BitAlignement, BitAlignement_RBV
      - mbbo,mbbi
      - PCO_BIT_ALIGNMENT
@@ -101,8 +106,8 @@ The command to configure an ADPco camera in the startup script is::
 
 ``portName`` is the name for the ADPco port driver
 
-``cameraId`` is used to identify which camera to control. On Windows it opens the next avialable camera no matter the input.
- On Linux, the it can be the camera serial number.
+``cameraId`` is used to identify which camera to control. If a number < 1000 is given, it opens the next available camera.
+ On Linux,  it can also be the camera serial number.
 
 ``maxMemory`` is the maximum amount of memory the NDArrayPool is allowed to allocate.  0 means unlimited.
 
