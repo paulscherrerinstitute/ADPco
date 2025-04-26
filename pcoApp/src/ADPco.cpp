@@ -775,45 +775,37 @@ void ADPco::validateBin(int *bin, int maxi, bool binary)
 /** Hardware ROI can be very strictive, e.g.
   * 1. the start and size must be a multiple of step.
   * 2. the region must be centered in the sensor.
-  * This functio takes the validation algorithm from ImageViewer program in pco.cpp SDK.
   * \param[inout] min The minimum value of the ROI.
   * \param[inout] size The size of the ROI.
-  * \param[in] step The step size.
-  * \param[in] min_size The minimum size of the ROI.
-  * \param[in] max_size The maximum size of the ROI.
+  * \param[in] stepSize The step size.
+  * \param[in] minSize The minimum size of the ROI.
+  * \param[in] maxSize The maximum size of the ROI.
   * \param[in] symmetric If true, the ROI must be symmetric.
-  * \param[in] keep_min If true, the min value has priority. */
-void ADPco::validateROI(int *min, int *size, int step, int min_size, int max_size, bool symmetric, bool keep_min)
+  * \param[in] keepMin If true, the min value has priority. */
+void ADPco::validateROI(int *min, int *size, int stepSize, int minSize, int maxSize, bool symmetric, bool keepMin)
 {
-    /* x0 and x1 are 1-based */
-    int x0 = *min + 1, x1 = *min + *size;
+    if (keepMin) {
+        *min = std::min<int>( std::max<int>(*min, 0), symmetric ? (maxSize / 2 - stepSize) : maxSize - stepSize);
 
-    x0 = std::min<int>( std::max<int>(x0, 1), symmetric ? max_size/2 : max_size-step);
-    x1 = std::min<int>( std::max<int>(x1, symmetric ? max_size/2+step: min_size), max_size);
+        int numSteps = *min / stepSize;
+        *min = numSteps * stepSize;
 
-    if (keep_min) {
-        x0 = (x0 - 1) / step * step + 1;
         if (symmetric) {
-            int num_steps = x0 / step;
-            x1 = max_size - num_steps * step;
+            *size = maxSize - *min * 2;
+        } else {
+            *size = std::min<int>(std::max<int>(*size, minSize), maxSize - *min);
+            *size = (*size / stepSize) * stepSize;
         }
     } else {
-        x1 = (x1 / step) * step;
         if (symmetric) {
-            int num_steps = (max_size - x1) / step;
-            x0 = num_steps * step + 1;
+            *size = std::min<int>(std::max<int>(*size, stepSize * 2), maxSize);
+            *min = (maxSize - *size) / 2 / stepSize * stepSize;
+            *size = maxSize - *min * 2;
+        } else {
+            *size = std::min<int>(std::max<int>(*size, minSize), maxSize - *min);
+            *size = (*size / stepSize) * stepSize;
         }
     }
-    /* Check for valid sizes */
-    if (!symmetric) {
-        if (x1 < x0) {
-            x1 = x0 + step - 1;
-        }
-    }
-
-    /* Convert back to 0-based notation */
-    *min = x0 - 1;
-    *size = x1 - x0 + 1;
 }
 
 DWORD ADPco::convertSecondsToTime(double seconds, WORD *timeBase)
@@ -882,6 +874,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
                 function == ADBinY) {
         int minX, minY, sizeX, sizeY, binX, binY, maxSizeX, maxSizeY;
         int effectiveSizeX, effectiveSizeY;
+        int symmetricROIX = 0, symmetricROIY = 0;
         getIntegerParam(ADMinX, &minX);
         getIntegerParam(ADMinY, &minY);
         getIntegerParam(ADSizeX, &sizeX);
@@ -890,6 +883,14 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         getIntegerParam(ADBinY, &binY);
         getIntegerParam(ADMaxSizeX, &maxSizeX);
         getIntegerParam(ADMaxSizeY, &maxSizeY);
+
+        if ((pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_ROI_HORZ_SYMM_TO_VERT_AXIS) ||
+            pcoSensor_.wADCOperation == 2 ||
+            (pcoGeneral_.strCamType.wCamType & CAMERATYPE_PCO_DIMAX_STD) == CAMERATYPE_PCO_DIMAX_STD)
+            symmetricROIX = 1;
+        if ((pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_ROI_VERT_SYMM_TO_HORZ_AXIS) ||
+            (pcoGeneral_.strCamType.wCamType & CAMERATYPE_PCO_EDGE) == CAMERATYPE_PCO_EDGE)
+            symmetricROIY = 1;
 
         validateBin(&binX,
             pcoSensor_.strDescription.wMaxBinHorzDESC,
@@ -907,7 +908,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
             pcoSensor_.strDescription.wRoiHorStepsDESC,
             pcoSensor_.strDescription.wMinSizeHorzDESC,
             effectiveSizeX,
-            pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_ROI_HORZ_SYMM_TO_VERT_AXIS,
+            symmetricROIX,
             function == ADMinX
         );
 
@@ -915,7 +916,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
             pcoSensor_.strDescription.wRoiVertStepsDESC,
             pcoSensor_.strDescription.wMinSizeVertDESC,
             effectiveSizeY,
-            pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_ROI_VERT_SYMM_TO_HORZ_AXIS,
+            symmetricROIY,
             function == ADMinY
         );
 

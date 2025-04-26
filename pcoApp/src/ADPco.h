@@ -82,7 +82,7 @@ private:
     asynStatus stopAcquisition();
 
     void validateBin(int *bin, int maxi, bool binary);
-    void validateROI(int *min, int *size, int step, int min_size, int max_size, bool symmetric, bool keep_min);
+    void validateROI(int *min, int *size, int stepSize, int minSize, int maxSize, bool symmetric, bool keepMin);
     DWORD convertSecondsToTime(double seconds, WORD *timeBase);
     double convertTimeToSeconds(DWORD time, WORD timeBase);
 
