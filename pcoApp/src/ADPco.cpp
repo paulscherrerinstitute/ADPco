@@ -785,7 +785,7 @@ void ADPco::validateBin(int *bin, int maxi, bool binary)
 void ADPco::validateROI(int *min, int *size, int stepSize, int minSize, int maxSize, bool symmetric, bool keepMin)
 {
     if (keepMin) {
-        *min = std::min<int>( std::max<int>(*min, 0), symmetric ? (maxSize / 2 - stepSize) : maxSize - stepSize);
+        *min = std::min<int>( std::max<int>(*min, 0), symmetric ? (maxSize / 2 - minSize / 2) : (maxSize - minSize) );
 
         int numSteps = *min / stepSize;
         *min = numSteps * stepSize;
