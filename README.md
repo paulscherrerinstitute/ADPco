@@ -5,5 +5,5 @@ driver for PCO cameras from
 [Excelitas](https://www.excelitas.com) using their pco.sdk.
 
 Additional information:
-* [Documentation](docs/ADPco.rst)
+* [Documentation](docs/ADPco/ADPco.rst)
 * [Release notes](RELEASE.md)
