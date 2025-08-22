@@ -1,0 +1,15 @@
+autorun.cmd
+O.*
+lib/
+bin/
+db/
+dbd/
+.vscode/
+envPaths
+dllPath.bat
+*.sav*
+include/
+*.local
+*.swp
+venv/
+*.iocsh_history
