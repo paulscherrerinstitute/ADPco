@@ -16,11 +16,7 @@ ifeq ($(WITH_PCO), YES)
 endif
 
 # PCO Windows SDK
-USR_INCLUDES_WIN32 += -I ../../pcoSupport/include
-
-ifeq ($(SHARED_LIBRARIES), YES)
-  USR_CPPFLAGS_WIN32 += -D_AFXDLL
-endif
+USR_INCLUDES_WIN32 += -I ../../../pcoSupport/include
 
 LIB_LIBS_WIN32  += pco_cdlg pco_conv sc2_cam sc2_dlg
 

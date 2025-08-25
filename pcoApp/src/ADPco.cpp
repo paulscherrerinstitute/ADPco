@@ -28,7 +28,6 @@
 #include <epicsExit.h>
 
 #ifdef _WIN32
-#include <afxwin.h>
 #include <windows.h>
 #endif
 #ifdef __linux__
