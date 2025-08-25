@@ -33,7 +33,7 @@ enum {
     PcoTimeBaseMillisec,
 }; 
 
-/** Main driver class inherited from areaDetectors ADGenICam class.
+/** Main driver class inherited from areaDetectors ADDriver class.
  * One instance of this class will control one camera.
  */
 class ADPco : public ADDriver
