@@ -12,7 +12,7 @@ ifeq ($(WITH_PCO), YES)
   USR_CPPFLAGS_Linux += -DPCO_LINUX
   USR_CPPFLAGS_Linux += -I $(PCO_INCLUDE)
   USR_LDFLAGS_Linux += -L $(PCO_LIB) -Wl,-rpath,$(PCO_LIB)
-  LIB_SYS_LIBS_Linux  += sc2_cam
+  LIB_SYS_LIBS_Linux  += pco_sc2cam
 endif
 
 # PCO Windows SDK
