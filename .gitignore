@@ -13,3 +13,4 @@ include/
 *.swp
 venv/
 *.iocsh_history
+vendor-examples/

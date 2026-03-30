@@ -158,7 +158,7 @@ ADPco::ADPco(const char *portName, const char *cameraId, size_t maxMemory, int p
 
         this->disconnect(pasynUserSelf);
         setIntegerParam(ADStatus, ADStatusDisconnected);
-        setStringParam(ADStatusMessage, "Camera disconnected");    
+        setStringParam(ADStatusMessage, "Camera disconnected");
     }
 
     startEventId_ = epicsEventCreate(epicsEventEmpty);
@@ -171,6 +171,7 @@ ADPco::ADPco(const char *portName, const char *cameraId, size_t maxMemory, int p
 
     // shutdown on exit
     epicsAtExit(c_shutdown, this);
+    this->armCamera();
 
     return;
 }
@@ -190,7 +191,7 @@ void ADPco::shutdown(void)
     if (cameraHandle_) {
         setIntegerParam(ADAcquire, 0);
         stopAcquisition();
-        closeCamera();    
+        closeCamera();
     }
     unlock();
     PCO_CleanupLib();
@@ -301,7 +302,7 @@ void ADPco::acquisitionTask()
                     numImagesCounter++;
                     imageCounter++;
                 }
-                errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, bufNum,  arraySizeX_, arraySizeY_, sizeof(WORD));
+                errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, bufNum,  arraySizeX_, arraySizeY_, sizeof(WORD) * 8);
                 CHECK_ERROR(errorCode, "PCO_AddBufferEx");
             }
         } else if ((errorCode & PCO_ERROR_TIMEOUT) != PCO_ERROR_TIMEOUT &&
@@ -320,9 +321,9 @@ void ADPco::acquisitionTask()
             updateTimeStamp(&pImage->epicsTS);
             pImage->timeStamp = pImage->epicsTS.secPastEpoch + pImage->epicsTS.nsec/1e9;
 
-            // Get any attributes that have been defined for this driver        
+            // Get any attributes that have been defined for this driver
             getAttributes(pImage->pAttributeList);
-            
+
             if (arrayCallbacks)
                 this->doCallbacksGenericPointer(pImage, NDArrayData, 0);
 
@@ -359,7 +360,7 @@ asynStatus ADPco::connect(asynUser *pasynUser)
                 driverName, functionName, status);
             return status;
         }
-        this->deviceIsReachable = true;   
+        this->deviceIsReachable = true;
         getCameraInfo();
     }
 
@@ -480,8 +481,8 @@ asynStatus ADPco::startAcquisition()
         pcoBuffer_[i].hEvent = NULL;
         pcoBuffer_[i].pData = NULL;
 
-        errorCode = PCO_AllocateBuffer(cameraHandle_, 
-            &pcoBuffer_[i].sBufNum, 
+        errorCode = PCO_AllocateBuffer(cameraHandle_,
+            &pcoBuffer_[i].sBufNum,
             arraySizeX_ * arraySizeY_ * sizeof(WORD),
             &pcoBuffer_[i].pData,
             &pcoBuffer_[i].hEvent
@@ -493,28 +494,32 @@ asynStatus ADPco::startAcquisition()
     }
 
     /* For non-edge cameras, switch on recording state before buffers given */
-    if (pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE &&
+    if (pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_USB3 ||
+        (pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE &&
         pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_42 &&
         pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_GL &&
         pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_HS &&
-        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_MT) {
+        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_MT
+        )) {
+
         errorCode = PCO_SetRecordingState(cameraHandle_, 1);
         CHECK_ERROR(errorCode, "PCO_SetRecordingState");
-        if (status) return (asynStatus)status;        
+        if (status) return (asynStatus)status;
     }
 
     for (size_t i=0; i<10; i++) {
-        errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, pcoBuffer_[i].sBufNum, arraySizeX_, arraySizeY_, sizeof(WORD));
+        errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, pcoBuffer_[i].sBufNum, arraySizeX_, arraySizeY_, sizeof(WORD) * 8);
         CHECK_ERROR(errorCode, "PCO_AddBufferEx");
         if (status) return (asynStatus)status;
     }
 
     /* For edge cameras, switch on recording state after buffers given */
-    if (pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE ||
+    if (pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_USB3 &&
+        (pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE ||
         pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_42 ||
         pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_GL ||
         pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_HS ||
-        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_MT) {
+        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_MT)) {
         errorCode = PCO_SetRecordingState(cameraHandle_, 1);
         CHECK_ERROR(errorCode, "PCO_SetRecordingState");
         if (status) return (asynStatus)status;
@@ -557,9 +562,9 @@ asynStatus ADPco::stopAcquisition()
 /** From PCO SDK documentation:
   * For Global Shutter setup the data format cannot be changed. The available data format is:
   *     PCO_CL_DATAFORMAT_5x12 | SCCMOS_FORMAT_TOP_CENTER_BOTTOM_CENTER
-  * 
+  *
   * pco.edge 5.5 Rolling Shutter and GlobalReset mode:
-  * 
+  *
   * | Sensor Pixelrate | horizontal Resolution | PCO_CL_Dataformat       | Lookup Table |
   * +------------------+-----------------------+-------------------------+--------------+
   * | 95 MHz           | all                   | PCO_CL_DATAFORMAT_5x16  | 0            |
@@ -608,7 +613,7 @@ asynStatus ADPco::setTransferParameterAndLut()
 
     if (cameraSetup == PCO_EDGE_SETUP_GLOBAL_SHUTTER) {
         dataformat = PCO_CL_DATAFORMAT_5x12 | SCCMOS_FORMAT_TOP_CENTER_BOTTOM_CENTER;
-    } else {   
+    } else {
         dataformat = PCO_CL_DATAFORMAT_5x16 | readoutMode;
         if (pcoGeneral_.strCamType.wCamSubType == CAMERASUBTYPE_PCO_EDGE_55) {
             if (pcoSensor_.dwPixelRate == 286000000 && arraySizeX_ > 1920) {
@@ -754,7 +759,7 @@ asynStatus ADPco::getCameraInfo()
     if (status == asynSuccess) {
         setIntegerParam(PcoAcquireMode, acquireMode);
     }
- 
+
     WORD interfaceType=2, format=0, reserved1=0, reserved2=0;
     errorCode = PCO_GetInterfaceOutputFormat(cameraHandle_, &interfaceType, &format, &reserved1, &reserved2);
     CHECK_ERROR(errorCode, "PCO_GetInterfaceOutputFormat");
@@ -857,7 +862,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
     int errorCode = 0;
     char errorText[100] = {0};
     static const char *functionName = "writeInt32";
- 
+
     /* Reject any call to the detector if it is running */
     int acquire;
     getIntegerParam(ADAcquire, &acquire);
@@ -938,7 +943,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         );
 
         errorCode = PCO_SetBinning(cameraHandle_, binX, binY);
-        CHECK_ERROR(errorCode, "PCO_SetBinning"); 
+        CHECK_ERROR(errorCode, "PCO_SetBinning");
 
         errorCode = PCO_SetROI(cameraHandle_, minX + 1, minY + 1, minX + sizeX, minY + sizeY);
         CHECK_ERROR(errorCode, "PCO_SetROI");
@@ -946,7 +951,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         errorCode = PCO_SetImageParameters(cameraHandle_, sizeX, sizeY,
             IMAGEPARAMETERS_READ_WHILE_RECORDING, NULL, 0);
         CHECK_ERROR(errorCode, "PCO_SetImageParameters");
-    
+
         status |= armCamera();
     } else if (function == PcoTriggerSoftware) {
         WORD triggered = 0;
@@ -960,7 +965,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         if (value > 0) {
             errorCode = PCO_SetADCOperation(cameraHandle_, value);
             CHECK_ERROR(errorCode, "PCO_SetADCOperation");
-            status |= armCamera();    
+            status |= armCamera();
         }
     } else if (function == PcoPixelRate) {
         if (value >= 0 && value < (int)pcoPixelRateList_.size()) {
@@ -973,7 +978,7 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         CHECK_ERROR(errorCode, "PCO_SetShutterMode");
         if (status == asynSuccess) {
             errorCode = PCO_RebootCamera(cameraHandle_);
-            CHECK_ERROR(errorCode, "PCO_RebootCamera");    
+            CHECK_ERROR(errorCode, "PCO_RebootCamera");
             if (status == asynSuccess) {
                 status |= closeCamera();
             }
@@ -1038,7 +1043,7 @@ asynStatus ADPco::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 
         exposure = std::min<double>( std::max<double>(exposure, pcoSensor_.strDescription.dwMinExposureDESC * 1e-9),  pcoSensor_.strDescription.dwMaxExposureDESC * 1e-3);
         delay = std::min<double>( std::max<double>(delay, pcoSensor_.strDescription.dwMinDelayDESC * 1e-9),  pcoSensor_.strDescription.dwMaxDelayDESC * 1e-3);
-        
+
         DWORD exposureTime, delayTime;
         WORD exposureTimeBase, delayTimeBase;
 
@@ -1060,7 +1065,7 @@ asynStatus ADPco::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
         errorCode = PCO_GetCOCRuntime(cameraHandle_, &period_s, &period_ns);
         CHECK_ERROR(errorCode, "PCO_GetCOCRuntime");
         if (status == asynSuccess) {
-            setDoubleParam(PcoFramePeriod, period_s + period_ns / 1e9);    
+            setDoubleParam(PcoFramePeriod, period_s + period_ns / 1e9);
         }
     } else {
         if (function < FIRST_PCO_PARAM)
@@ -1077,7 +1082,7 @@ asynStatus ADPco::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
         asynPrint(pasynUser, ASYN_TRACEIO_DRIVER,
               "%s:%s: function=%d, value=%g\n",
               driverName, functionName, function, value);
-    return((asynStatus)status);   
+    return((asynStatus)status);
 }
 
 
@@ -1143,7 +1148,7 @@ asynStatus ADPco::readEnum(asynUser *pasynUser, char *strings[], int values[], i
             strings[*nIn] = epicsStrDup("Single");
             values[*nIn] = 1;
             severities[*nIn] = 0;
-            (*nIn)++;    
+            (*nIn)++;
         }
         if (pcoSensor_.strDescription.wNumADCsDESC >= 2) {
             if (strings[*nIn]) free(strings[*nIn]);

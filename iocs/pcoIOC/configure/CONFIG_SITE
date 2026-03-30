@@ -41,4 +41,6 @@ ifdef T_A
   -include $(AREA_DETECTOR)/configure/CONFIG_SITE.$(EPICS_HOST_ARCH).$(T_A)
 endif
 
+-include $(ADPCO)/configure/CONFIG_SITE
+-include $(ADPCO)/configure/CONFIG_SITE.local
 -include $(TOP)/configure/CONFIG_SITE.local
