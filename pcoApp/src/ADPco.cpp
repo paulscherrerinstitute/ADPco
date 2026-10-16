@@ -861,7 +861,12 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
     /* Reject any call to the detector if it is running */
     int acquire;
     getIntegerParam(ADAcquire, &acquire);
-    if ((function != ADAcquire && function != PcoTriggerSoftware) && acquire == 1) {
+    if ((function != ADAcquire 
+        && function != PcoTriggerSoftware 
+#if ADCORE_VERSION > 3 || (ADCORE_VERSION == 3 && ADCORE_REVISION > 13)
+        && function != NDPoolPollStats
+#endif
+        ) && acquire == 1) {
         asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR,
         "%s:%s: camera is busy\n", driverName, functionName);
         return asynError;
