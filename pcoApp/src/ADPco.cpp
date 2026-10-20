@@ -984,9 +984,11 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
             }
         }
     } else if (function == PcoReadoutMode) {
-        errorCode = PCO_SetInterfaceOutputFormat(cameraHandle_, 2, value << 8, 0, 0);
-        CHECK_ERROR(errorCode, "PCO_SetInterfaceOutputFormat");
-        status |= armCamera();
+        if (value != 0xFFFF) {
+            errorCode = PCO_SetInterfaceOutputFormat(cameraHandle_, 2, value << 8, 0, 0);
+            CHECK_ERROR(errorCode, "PCO_SetInterfaceOutputFormat");
+            status |= armCamera();
+        }
     } else if (function == PcoBitAlignment) {
         errorCode = PCO_SetBitAlignment(cameraHandle_, value);
         CHECK_ERROR(errorCode, "PCO_SetBitAlignment");
@@ -1154,6 +1156,23 @@ asynStatus ADPco::readEnum(asynUser *pasynUser, char *strings[], int values[], i
             if (strings[*nIn]) free(strings[*nIn]);
             strings[*nIn] = epicsStrDup("Dual");
             values[*nIn] = 2;
+            severities[*nIn] = 0;
+            (*nIn)++;
+        }
+        return asynSuccess;
+    } else if (function == PcoReadoutMode) {
+        *nIn = 0;
+        WORD interfaceType=2, format=0, reserved1=0, reserved2=0;
+        int errorCode = PCO_GetInterfaceOutputFormat(cameraHandle_, &interfaceType, &format, &reserved1, &reserved2);
+        if (errorCode == PCO_NOERROR) {
+            strings[*nIn] = epicsStrDup("Single Top Down"); values[*nIn] = 0; severities[*nIn] = 0; (*nIn)++;
+            strings[*nIn] = epicsStrDup("Dual Outside In"); values[*nIn] = 1; severities[*nIn] = 0; (*nIn)++;
+            strings[*nIn] = epicsStrDup("Dual Inside Out"); values[*nIn] = 2; severities[*nIn] = 0; (*nIn)++;
+            strings[*nIn] = epicsStrDup("Dual Bottom Up");  values[*nIn] = 3; severities[*nIn] = 0; (*nIn)++;
+            strings[*nIn] = epicsStrDup("Dual Top Down");   values[*nIn] = 4; severities[*nIn] = 0; (*nIn)++;
+        } else {
+            strings[*nIn] = epicsStrDup("N/A");
+            values[*nIn] = 0xFFFF;
             severities[*nIn] = 0;
             (*nIn)++;
         }
