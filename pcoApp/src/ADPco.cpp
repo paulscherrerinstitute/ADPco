@@ -460,9 +460,27 @@ asynStatus ADPco::armCamera()
     CHECK_ERROR(errorCode, "PCO_GetCameraHealthStatus");
     if (status) return (asynStatus)status;
 
-    status |= setTransferParameterAndLut();
+    /* pco.sdk manual: For pco.edge 5.5 cameras with Camera Link interface running in Rolling Shutter mode
+       PCO_SetTransferParameter and PCO_SetActiveLookupTable must be called,
+       followed by an additional PCO_ArmCamera call. */
+
+    if (pcoGeneral_.strCamType.wInterfaceType == INTERFACE_CAMERALINKHS ||
+        pcoGeneral_.strCamType.wInterfaceType == INTERFACE_CAMERALINK) {
+        status = setTransferParameterAndLut();
+        if (status) return (asynStatus)status;
+
+        errorCode = PCO_ArmCamera(cameraHandle_);
+        CHECK_ERROR(errorCode, "PCO_ArmCamera");
+        if (status) return (asynStatus)status;
+    }
 
     status |= getCameraInfo();
+
+    /* pco.sdk manual: After a successful arm, PCO_SetImageParameters must be called.
+       This is mandatory for cameras with Camera Link, CLHS and GigE interface and recommended for all others. */
+    errorCode = PCO_SetImageParameters(cameraHandle_, arraySizeX_, arraySizeY_, IMAGEPARAMETERS_READ_WHILE_RECORDING, NULL, 0);
+    CHECK_ERROR(errorCode, "PCO_SetImageParameters");
+    if (status) return (asynStatus)status;
 
     return (asynStatus)status;
 }
@@ -493,12 +511,8 @@ asynStatus ADPco::startAcquisition()
         pcoBufList_[i].sBufNr = pcoBuffer_[i].sBufNum;
     }
 
-    /* For non-edge cameras, switch on recording state before buffers given */
-    if (pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE &&
-        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_42 &&
-        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_GL &&
-        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_HS &&
-        pcoGeneral_.strCamType.wCamType != CAMERATYPE_PCO_EDGE_MT) {
+    /* For non CLHS cameras, switch on recording state before buffers given */
+    if (pcoGeneral_.strCamType.wInterfaceType != INTERFACE_CAMERALINKHS) {
         errorCode = PCO_SetRecordingState(cameraHandle_, 1);
         CHECK_ERROR(errorCode, "PCO_SetRecordingState");
         if (status) return (asynStatus)status;        
@@ -510,12 +524,8 @@ asynStatus ADPco::startAcquisition()
         if (status) return (asynStatus)status;
     }
 
-    /* For edge cameras, switch on recording state after buffers given */
-    if (pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE ||
-        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_42 ||
-        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_GL ||
-        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_HS ||
-        pcoGeneral_.strCamType.wCamType == CAMERATYPE_PCO_EDGE_MT) {
+    /* For CLHS cameras, switch on recording state after buffers given */
+    if (pcoGeneral_.strCamType.wInterfaceType == INTERFACE_CAMERALINKHS) {
         errorCode = PCO_SetRecordingState(cameraHandle_, 1);
         CHECK_ERROR(errorCode, "PCO_SetRecordingState");
         if (status) return (asynStatus)status;
@@ -585,12 +595,6 @@ asynStatus ADPco::setTransferParameterAndLut()
     int status = asynSuccess;
     int errorCode = PCO_NOERROR;
     char errorText[100] = {0};
-
-    /* Only for cameralink interfaces */
-    if (pcoGeneral_.strCamType.wInterfaceType != INTERFACE_CAMERALINK &&
-        pcoGeneral_.strCamType.wInterfaceType != INTERFACE_CAMERALINKHS) {
-        return asynSuccess;
-    }
 
     PCO_SC2_CL_TRANSFER_PARAM transferParam;
     errorCode = PCO_GetTransferParameter(cameraHandle_, &transferParam, sizeof(transferParam));
