@@ -25,7 +25,11 @@
 
 
 #ifdef PCO_LINUX
- #define SC2_SDK_FUNC 
+ #ifdef SC2_CAM_EXPORTS
+  #define SC2_SDK_FUNC __attribute__ ((__visibility__("default")))
+ #else
+  #define SC2_SDK_FUNC
+ #endif
  #define WINAPI
 #endif
 
@@ -36,6 +40,8 @@
   #else
    #define SC2_SDK_FUNC __declspec(dllexport)
   #endif
+ #elif SC2_CAM_STATIC
+  #define SC2_SDK_FUNC
  #else
   #define SC2_SDK_FUNC __declspec(dllimport)
  #endif
@@ -46,7 +52,7 @@ extern "C" {                           //  Assume C declarations for C++
 #endif  //C++
 
 #define PCO_SDK_VERMAJOR 1             // Shows the current version of the sc2_cam.dll
-#define PCO_SDK_VERMINOR 33
+#define PCO_SDK_VERMINOR 36
 
 // VERY IMPORTANT INFORMATION:
 /*******************************************************************/
@@ -650,6 +656,231 @@ SC2_SDK_FUNC int WINAPI PCO_GetHWIOSignalDescriptor(HANDLE ph, WORD wSignalNum, 
 //     WORD wSignalNum -> WORD variable to query the signal
 //     SIGNAL_DESC *ptrSignal -> Pointer to a SIGNAL_DESC structure to get the
 //                               signal description
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignalDescription(HANDLE ph, PCO_Signal_IO_Description* pIODesc, DWORD* pdwSize);
+// Gets the IO signal output description. This creates a copy of the internal description. Please be informed that
+// it is not possible to just make a copy of pIODesc, as there are structure internal pointers, which loose context.
+// In case you need another copy, either forward the pointer or do a call with another allocated structure.
+// Example:
+//  PCO_Signal_IO_Description* pIODesc = NULL;
+//  DWORD dwSize = 0;
+//  int err = PCO_GetIOSignalDescription(HANDLE ph, pIODesc, &dwSize);
+//  if(err == PCO_NOERROR)
+//  {
+//    pIODesc = (PCO_Signal_IO_Description*)new unsigned char[dwSize];
+//    err = PCO_GetIOSignalDescription(HANDLE ph, pIODesc, &dwSize);
+//  }
+// 
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     PCO_Signal_IO_Description* pIODesc -> Pointer to receive the signal description
+//     DWORD* pdwSize -> Pointer to receive the size of the structure for pre-allocation
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignalStruct(HANDLE ph, WORD wIndex, WORD* pwNumSignals, PCO_IO_Signal* pIOSignal);
+// Gets the IO signal output structure for wIndex.
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     WORD wIndex -> WORD with the signal index
+//     WORD* pwNumSignals -> Pointer to receive the number of available signals
+//     PCO_IO_Signal* pIOSignal -> Pointer to receive the IO signal structure
+
+SC2_SDK_FUNC int WINAPI PCO_SetIOSignalStruct(HANDLE ph, WORD wIndex, PCO_IO_Signal* pIOSignal);
+// Sets the IO signal output structure for wIndex.
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     WORD wIndex -> WORD with the signal index
+//     PCO_IO_Signal* pIOSignal -> Pointer to receive the IO signal structure
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOTriggerStruct(HANDLE ph, BYTE bTriggerDestinationIndex, WORD* pwNumTriggers, PCO_IO_Trigger* pIOTrigger);
+// Gets the IO trigger output structure for wIndex.
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     BYTE bTriggerDestinationIndex -> BYTE with the trigger index
+//     WORD* pwNumTriggers -> Pointer to receive the number of available triggers
+//     PCO_IO_Trigger* pIOTrigger -> Pointer to receive the IO signal structure
+
+SC2_SDK_FUNC int WINAPI PCO_SetIOTriggerStruct(HANDLE ph, BYTE bsigbTriggerDestinationIndexnalcount, PCO_IO_Trigger* pIOTrigger);
+// Sets the IO signal output structure for wIndex.
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     BYTE bTriggerDestinationIndex -> BYTE with the trigger index
+//     PCO_IO_Trigger* pIOTrigger -> Pointer to receive the IO signal structure
+
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignalDescriptor(HANDLE ph, WORD wIndex, char* szName, WORD* wDirection, WORD* wNumOutputSignals, WORD* wType, WORD* wFilter, WORD* wInverter);
+// Gets the IO signal output names in blocks
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     WORD wIndex -> BYTE with the signal index
+//     char* szName -> Pointer to receive the signal name. Up to SIGNAL_STR_MAX_NAME_LENGTH characters
+//     WORD* wDirection -> Pointer to receive the signal direction
+//     WORD* wNumOutputSignals -> Pointer to receive the number of output signals for this signal
+//     WORD* wType -> Pointer to receive the signal type
+//     WORD* wFilter -> Pointer to receive the signal filter
+//     WORD* wInverter -> Pointer to receive the signal inverter
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignalOutputNames(HANDLE ph, WORD wIndex, WORD wBlockIndex, char* szSignalNames, BYTE* bCount);
+// Gets the IO signal output names in blocks
+// In: HANDLE ph -> Handle to a proviously opened camera
+//     WORD wIndex -> BYTE with the signal index the outputs should be returned
+//     WORD wBlockIndex -> BYTE with the signal block index that should be returned. Each block consists of up to IO_SIGNAL_BLOCK_SIZE output signal names.
+//     char* szSignalNames -> Pointer to receive the names of up to IO_SIGNAL_BLOCK_SIZE signals. Each can consist of up to SIGNAL_STR_MAX_NAME_LENGTH characters
+//     BYTE* bCount -> Pointer to receive count of the count of signal names returned
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignalCount(HANDLE ph, WORD* wNumSignals);
+// Gets the IO signal count
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     WORD* wNumSignals -> Pointer to receive the count of available signals
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetIOSignal(HANDLE ph, WORD* wIndex, WORD* wDirection, WORD* wOutputSignalIndex, WORD* wInverter, WORD* wType, WORD* wFilter);
+// Gets the IO signal settings for a given index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     WORD* wIndex -> Pointer with the index of the signal and to receive the index gotten from the camera 
+//     WORD* wDirection -> Pointer to receive the direction of the signal
+//     WORD* wOutputSignalIndex -> Pointer to receive the output signal index. Same index as the output name index
+//     WORD* wInverter -> Pointer to receive if the signal is inverted or not
+//     WORD* wType -> Pointer to receive the signal type
+//     WORD* wFilter -> Pointer to receive the state of the filter
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_SetIOSignal(HANDLE ph, WORD* wIndex, WORD* wDirection, WORD* wOutputSignalIndex, WORD* wInverter, WORD* wType, WORD* wFilter);
+// Sets the IO signal settings for a given index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     WORD* wIndex -> Pointer with the index of the signal and to receive the index gotten from the camera 
+//     WORD* wDirection -> Pointer with the direction of the signal and to receive the setting set in the camera
+//     WORD* wOutputSignalIndex -> Pointer with the output signal index and to receive the setting set in the camera. Same index as the output name index
+//     WORD* wInverter -> Pointer with the info if the signal is inverted or not and to receive the setting set in the camera
+//     WORD* wType -> Pointer with the signal type and to receive the setting set in the camera
+//     WORD* wFilter -> Pointer with the state of the filter and to receive the setting set in the camera
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTriggerSourceNames(HANDLE ph, BYTE bBlockIndex, char* szSourceNames, BYTE* bCount, WORD* wTotalCount);
+// Gets trigger source names in blocks
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE* bBlockIndex -> BYTE with the signal block index that should be returned. Each block consists of up to TRIGGER_BLOCK_SIZE signal names.
+//     char* szSourceNames -> Pointer to receive the names of up to TRIGGER_BLOCK_SIZE names of trigger sources. Each can consist of up to SIGNAL_STR_MAX_NAME_LENGTH characters
+//     BYTE* bCount -> Pointer to receive count of signal names returned
+//     WORD* wTotalCount -> Pointer to receive the count for all trigger sources
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTriggerDestinationDescriptions(HANDLE ph, BYTE bTriggerIndex, char* szDestName, DWORD* dwMaxDelay, DWORD* dwSteppingDelay, DWORD* dwMaxMultiplier, DWORD* dwMaxDivider);
+// Gets the trigger destination description for a given index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE bTriggerIndex -> BYTE with the destination index
+//     char* szDestName -> Pointer to receive the name of the destination trigger. Up to SIGNAL_STR_MAX_NAME_LENGTH characters
+//     BYTE* dwMaxDelay -> Pointer to receive the max delay
+//     BYTE* dwSteppingDelay -> Pointer to receive the stepping delay
+//     BYTE* dwMaxMultiplier -> Pointer to receive the max multiplier
+//     BYTE* dwMaxDivider -> Pointer to receive the max divider
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTriggerConnection(HANDLE ph, BYTE bTriggerDstIndex, BYTE* bTriggerSourceIndex, BYTE* bTriggerType);
+// Gets the Trigger connection and type for a given index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE bTriggerDstIndex -> BYTE with the destination index to get the connection of.
+//     BYTE* bTriggerSourceIndex -> Pointer to receive the source index of the connection
+//     BYTE* bTriggerType -> Pointer to receive the trigger type
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_SetTriggerConnection(HANDLE ph, BYTE* bTriggerDstIndex, BYTE* bTriggerSourceIndex, BYTE* bTriggerType);
+// Sets a trigger connection between a source and destination
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE* bTriggerDstIndex -> Pointer with the destination index and to receive the setting set in the camera
+//     BYTE* bTriggerSourceIndex -> Pointer with the source index and to receive the setting set in the camera
+//     BYTE* bTriggerType -> Pointer to receive the trigger type
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTriggerModifier(HANDLE ph, BYTE* bTriggerDestinationIndex, BYTE* bTimebaseDelay, DWORD* dwDelay, DWORD* dwMultiplier, DWORD* dwDivider);
+// Gets a trigger connection modifier for a destination
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE* bTriggerDestinationIndex -> Pointer with the destination index and to receive the index gotten from the camera
+//     BYTE* bTimebaseDelay -> Pointer to receive the delay timebase
+//     DWORD* dwDelay -> Pointer to receive the delay in the given timebase
+//     DWORD* dwMultiplier -> Pointer to receive the multiplier
+//     DWORD* dwDivider -> Pointer to receive the divider
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_SetTriggerModifier(HANDLE ph, BYTE* bTriggerDestinationIndex, BYTE* bTimebaseDelay, DWORD* dwDelay, DWORD* dwMultiplier, DWORD* dwDivider);
+// Sets a trigger connection modifier for a destination
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE* bTriggerDestinationIndex -> Pointer with the destination index and to receive the index gotten from the camera
+//     BYTE* bTimebaseDelay -> Pointer with the delay timebase and to receive the setting set in the camera
+//     DWORD* dwDelay -> Pointer with the delay in the given timebase and to receive the setting set in the camera
+//     DWORD* dwMultiplier -> Pointer with the multiplier and to receive the setting set in the camera
+//     DWORD* dwDivider -> Pointer with the divider and to receive the setting set in the camera
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTDIDescription(HANDLE ph, PCO_TDI_Stage_Description * pTDIDesc, DWORD * pdwSize);
+// Gets the TDI signal description. This creates a copy of the internal description. Please be informed that
+// it is not possible to just make a copy of pTDIDesc, as there are structure internal pointers, which loose context.
+// In case you need another copy, either forward the pointer or do a call with another allocated structure.
+// Example:
+//  PCO_TDI_Stage_Description* pTDIDesc = NULL;
+//  DWORD dwSize = 0;
+//  int err = PCO_GetTDIDescription(HANDLE ph, pTDIDesc, &dwSize);
+//  if(err == PCO_NOERROR)
+//  {
+//    pTDIDesc = (PCO_TDI_Stage_Description*)new unsigned char[dwSize];
+//    err = PCO_GetTDIDescription(HANDLE ph, pTDIDesc, &dwSize);
+//  }
+// 
+// In: HANDLE ph -> Handle to a previously opened camera
+//     PCO_TDI_Stage_Description* pTDIDesc -> Pointer to receive the tdi description
+//     DWORD* pdwSize -> Pointer to receive the size of the structure for pre-allocation
+
+SC2_SDK_FUNC int WINAPI PCO_GetTDINumBands(HANDLE ph, WORD* wCount);
+// Gets the amount of Time Delay Integration (TDI) bands
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     WORD* wCount -> Pointer to receive the count
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTDIStagesList(HANDLE ph, BYTE bIndex, BYTE bBlockIndex, WORD* wTDIStages, WORD* wSize);
+// Gets the list of possible TDI stages for a given TDI band index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE wIndex -> BYTE with the band index to set
+//     BYTE bBlockIndex -> BYTE with the block index of the band you want. Each block consists of 100 stages.
+//     WORD* wTDIStages -> Array pointer to receive the 100 stages of that band and block index
+//     WORD* wSize -> Pointer to receive number of stages written to the array
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_GetTDIStages(HANDLE ph, BYTE bIndex, BYTE* bMode, WORD* wTDIStages);
+// Gets the current TDI Stages for a given TDI band index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE wIndex -> BYTE with the band index to set
+//     BYTE* bMode -> Pointer to receive the mode
+//     WORD* wTDIStages -> Pointer to receive current the TDI Stages
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_SetTDIStages(HANDLE ph, BYTE bIndex, BYTE* bMode, WORD* wTDIStages);
+// Sets the current TDI Stages for a given TDI band index
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     BYTE wIndex -> BYTE with the band index to set
+//     BYTE* bMode -> Pointer with the mode and to receive the setting set in the camera
+//     WORD* wTDIStages -> Pointer with the current TDI Stages and to receive the setting set in the camera
+// Out: int -> Error message
+
+
+SC2_SDK_FUNC int WINAPI PCO_GetLinerate(HANDLE ph, DWORD* dwLinerate, WORD *wMode, WORD* wStatus, WORD* wBase);
+// Gets the linerate for a linescan camera
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     DWORD* dwLinerate -> Pointer to receive the linerate of the camera in the given wBase unit
+//     WORD* wMode -> Pointer to receive the mode the camera is in
+//     WORD* wStatus -> Pointer to receive the status the camera has
+//     WORD* wBase -> Pointer to receive the unit for the linerate (mHz, Hz, kHz)
+// Out: int -> Error message
+
+SC2_SDK_FUNC int WINAPI PCO_SetLinerate(HANDLE ph, DWORD* dwLinerate, WORD wMode, WORD* wStatus, WORD* wBase);
+// Sets the linerate for a linescan camera and returns the values set in the pointers
+// In: HANDLE ph -> Handle to a proviously opened camera.
+//     DWORD* dwLinerate -> Pointer with the linerate and to receive the setting set in the camera
+//     WORD wMode -> WORD to hold the mode
+//     WORD* wStatus -> Pointer with the status and to receive the setting set in the camera
+//     WORD* wBase -> Pointer with the unit (mHz, Hz, kHz) and to receive the setting set in the camera
+// Out: int -> Error message
+
+
+SC2_SDK_FUNC int WINAPI PCO_ForceVirtualFrameTrigger(HANDLE ph);
+// Triggers a full frame in the line scan camera. ForceTrigger does only a single line in the line scan camera.
+// Trigger line does not send something to the PC.
+// Empty Lines are padded in as needed on Record Stop.
+// In: HANDLE ph -> Handle to a proviously opened camera.
 // Out: int -> Error message
 
 SC2_SDK_FUNC int WINAPI PCO_GetColorCorrectionMatrix(HANDLE ph, double* pdMatrix);
@@ -2088,8 +2319,19 @@ SC2_SDK_FUNC void WINAPI PCO_GetErrorTextSDK(DWORD dwError, char* pszErrorString
 // DWORD dwError = PCO_NOERROR;
 // DWORD dwErrorStringLength = 100;
 
+
+SC2_SDK_FUNC int WINAPI PCO_GetVersion_SDK(const char* pszInterfaceName, int iNameLength, int* piMajor, int* piMinor, int* piPatch, int* piBuild);
+// Returns version information about this dll and loaded interface dlls.
+// module names can be <"usb" | "usb3" | "gige" | "genicam" | "cl" | "clhs_kaya" | "clhs_me5">
+// const char* pszInterfaceName: String to get the name of the module, NULL returns versions of SDK
+// int iNameLength: Length of the string in bytes (can be 0)
+// int* piMajor: Pointer to int to get the Major version number (can be NULL)
+// int* piMinor: Pointer to int to get the Minor version number (can be NULL)
+// int* piPatch: Pointer to int to get the Patch version number (can be NULL)
+// int* piBuild: Pointer to int to get the Build version number (can be NULL)
+
 SC2_SDK_FUNC int WINAPI PCO_GetVersionInfoSC2_Cam(char* pszName, int iNameLength, char* pszPath, int iPathLength, int* piMajor, int* piMinor, int* piPatch, int* piBuild);
-// Returns version information about the dll. 
+// Deprecated. Returns version information about the dll. 
 // char* pszName: String to get the name of the module (can be NULL)
 // int iNameLength: Length of the string in bytes (can be 0)
 // char* pszPath: String to get the path of the module (can be NULL)
@@ -2242,104 +2484,16 @@ SC2_SDK_FUNC int WINAPI PCO_SetFlimRelativePhase(HANDLE ph,
 /////// Lens Control commands ///////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
+// All Lens Control commands are deprecated. Please use pco_lenstrl library instead
 SC2_SDK_FUNC int WINAPI PCO_InitLensControl(HANDLE hCamera, HANDLE *phLensControl);
-// Initializes a new lens control object and returns the handle to the internal structures when phLensControl is NULL.
-// Also reinitializes an already existing lens control object when called with a valid phLensControl.
-// E.g. when the lens is changed in front of the Birger ring the lens functions will return an error as there is no lens 
-// for a short time. To get the lens back after re-plug, call PCO_InitLensControl. You can use a windows timer function
-// in order to call the init function till it returns without error. Processing can be continued normally after successful
-// re-initialization.
-// Please query the descriptor for availability of the lens control functionality:
-//   if(strCamera->strSensor.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_USER_INTERFACE) == GENERALCAPS1_USER_INTERFACE)
-//     ...
-// In: HANDLE ph -> Handle to a previously opened camera.
-//     HANDLE *phLensControl -> Pointer to a PCO_LensControl structure, which holds all necessary parameters
-// Out: int -> Error message.
-//
-// Here's a short code listing on how to deal with a lens control device (Camera already opened, no error handling):
-// HANDLE hLensControl = NULL;
-// PCO_LensControl* phLensControl;
-// int err = PCO_InitLensControl(hCamera, (HANDLE*) &hLensControl);               // Initializes a lens control object
-// phLensControl = (PCO_LensControl*) hLensControl;                               // Cast the stuct ptr to get access to the values
-// DWORD dwflagsin = 0, dwflagsout = 0;
-// DWORD dwAperturePos = phLensControl->pstrLensControlParameters->dwApertures[0];// Gets the first F/n value
-// LONG lFocusPos = 0;
-// err = PCO_SetApertureF(phLensControl, &dwAperturePos, dwflagsin, &dwflagsout); // Sets the aperture as F/n value
-// err = PCO_GetAperture(phLensConrtol, &dwAperturePos, &dwflagsout);             // Gets the aperture as index value
-// err = PCO_GetFocus(phLensControl, &lFocusPos, &dwflagsout);                    // Gets the focus (0...0x3FFF)
-// err = PCO_SetFocus(phLensControl, &lFocusPos, dwflagsin, &dwflagsout);         // Sets the focus
-// err = PCO_CloseLensControl(hLensControl);                                      // Closes the lens control object
-
 SC2_SDK_FUNC int WINAPI PCO_CleanupLensControl();
-// Cleans up all internal lens control objects, which were created. It closes and deletes all lens control objects.
-// This is an internally used helper function, which is also exported.
-
 SC2_SDK_FUNC int WINAPI PCO_CloseLensControl(HANDLE hLensControl);
-// Closes and deletes a lens control object. The handle will be invalid afterwards.
-// In: HANDLE ph -> Handle to a previously opened lens control object.
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_GetLensFocus(HANDLE hLens, LONG *lFocusPos, DWORD *dwflags);
-// Gets the current focus of the lens control device as value between 0...0x3FFF.
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     LONG* lFocusPos -> Pointer to a long value to receive the current focus position
-//     DWORD* dwflags -> Pointer to a DWORD value to receive status flags
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_SetLensFocus(HANDLE hLens, LONG *lFocusPos, DWORD dwflagsin, DWORD *dwflagsout);
-// Sets the focus of the lens control device to a new position. Value must be between 0...0x3FFF.
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     LONG* lFocusPos -> Pointer to a long value to set the new and receive the current focus position
-//     DWORD dwflagsin -> DWORD variable to control the function
-//                        Set LENSCONTROL_IN_LENSVALUE_RELATIVE to change the focus relative to the current position 
-//     DWORD* dwflagsout -> Pointer to a DWORD value to receive status flags
-//                          LENSCONTROL_OUT_LENSWASCHANGED indicates that the focus changed
-//                          LENSCONTROL_OUT_LENSHITSTOP indicates that a stop was hit (either 0 or 0x3FFF)
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_GetAperture(HANDLE hLens, WORD *wAperturePos, DWORD *dwflags);
-// Gets the current aperture position of the lens control device in steps. Position ranging from 0...max steps (dwFNumberNumStops)
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     WORD* wAperturePos -> Pointer to a WORD value to receive the current aperture position
-//     DWORD* dwflags -> Pointer to a DWORD value to receive status flags
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_SetAperture(HANDLE hLens, WORD *wAperturePos, DWORD dwflagsin, DWORD *dwflagsout);
-// Sets the current aperture position of the lens control device in steps. Position ranging from 0...max steps (dwFNumberNumStops)
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     WORD* wAperturePos -> Pointer to a WORD value to set the new and receive the current aperture position
-//     DWORD dwflagsin -> DWORD variable to control the function
-//                        Set LENSCONTROL_IN_LENSVALUE_RELATIVE to change the aperture relative to the current position 
-//     DWORD* dwflagsout -> Pointer to a DWORD value to receive status flags
-//                          LENSCONTROL_OUT_LENSWASCHANGED indicates that the aperture changed
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_GetApertureF(HANDLE hLens, DWORD *dwfAperturePos, WORD *wAperturePos, DWORD *dwflags);
-// Gets the current aperture position of the lens control device in f/position * 10 (member of dwApertures)
-// The dwApertures array is reinitialized in case the zoom changes and either PCO_GetApertureF or PCO_SetApertureF are called.
-// Change in zoom will be shown in dwflags as LENSCONTROL_OUT_ZOOMHASCHANGED
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     DWORD* dwAperturePos -> Pointer to a DWORD value to receive the current aperture position in f/x * 10 (e.g. f/5.4 -> 54)
-//     WORD* wAperturePos -> Pointer to a WORD value to receive the current aperture position; Can be NULL
-//     DWORD* dwflags -> Pointer to a DWORD value to receive status flags:
-//                       LENSCONTROL_OUT_ZOOMHASCHANGED indicates that the dwApertures array was changed due to zoom change
-// Out: int -> Error message.
-
 SC2_SDK_FUNC int WINAPI PCO_SetApertureF(HANDLE hLens, DWORD *dwfAperturePos, DWORD dwflagsin, DWORD *dwflagsout);
-// Sets the current aperture position of the lens control device in f/position * 10 (member of dwApertures)
-// Please select a member of the current dwApertures array.
-// The dwApertures array is reinitialized in case the zoom changes and either PCO_GetApertureF or PCO_SetApertureF are called.
-// Change in zoom will be shown in dwflagsout as LENSCONTROL_OUT_ZOOMHASCHANGED
-// In: HANDLE hLens -> Handle to a previously opened lens control object.
-//     DWORD* dwAperturePos -> Pointer to a DWORD value to receive the current aperture position in f/x * 10 (e.g. f/5.4 -> 54)
-//     DWORD dwflagsin -> DWORD value to set control flags
-//     DWORD* dwflagsout -> Pointer to a DWORD value to receive status flags:
-//                       LENSCONTROL_OUT_ZOOMHASCHANGED indicates that the dwApertures array was changed due to zoom change
-//                       LENSCONTROL_OUT_LENSWASCHANGED indicates that the aperture changed
-// Out: int -> Error message.
-// DWOD dwAperturePosF = phLensControl->pstrLensControlParameters->dwApertures[wAperturePos++];
-// err = PCO_SetApertureF(phLensControl, &dwAperturePosF, dwflagsin, &dwflagsout);
-
 
 SC2_SDK_FUNC int WINAPI PCO_SendBirgerCommand(HANDLE hLens, PCO_Birger* pstrBirger, char* szcmd, int inumdelim);
 // Sends a telegram to a Birger ring device and returns the result in the PCO_Birger structure

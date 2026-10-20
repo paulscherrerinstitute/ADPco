@@ -121,6 +121,8 @@
 #define CAMERATYPE_PCO_FAMILY_DICAM          0x1700 // pco.dicam
 #define CAMERATYPE_PCO_FAMILY_DIMAX          0x1900 // pco.dimax
 #define CAMERATYPE_PCO_FAMILY_PIXELFLY       0x1A00 // pco.pixelfly
+#define CAMERATYPE_PCO_FAMILY_OEM            0x1B00
+#define CAMERATYPE_PCO_FAMILY_HORIZON        0x1C00 // pco.horizon
 
 
 // PANDA Family
@@ -145,7 +147,10 @@
 #define CAMERASUBTYPE_PCO_EDGE_260_CLHS           0x0008 // pco.edge 26 CLHS
 #define CAMERASUBTYPE_PCO_EDGE_260_DS_CLHS        0x0009 // pco.edge 26 DS CLHS
 #define CAMERASUBTYPE_PCO_EDGE_260_NIR_CLHS       0x000A // pco.edge 26 NIR CLHS
-
+#define CAMERASUBTYPE_PCO_EDGE_94_BI_CLHS         0x000B // pco.edge 9.4 bi CLHS
+#define CAMERASUBTYPE_PCO_EDGE_OEM7               0x000C
+#define CAMERASUBTYPE_PCO_EDGE_13_SWIR_CLHS       0x000D // pco.edge 1.3 SWIR CLHS
+#define CAMERASUBTYPE_PCO_EDGE_260_C_CLHS         0x000E // pco.edge 26 CLHS color
 
 // DICAM Family
 #define CAMERASUBTYPE_PCO_DICAM_C1                0x0001 // pco.dicam C1
@@ -156,14 +161,26 @@
 #define CAMERASUBTYPE_PCO_DICAM_C6                0x0006 // pco.dicam C6
 #define CAMERASUBTYPE_PCO_DICAM_C7                0x0007 // pco.dicam C7
 #define CAMERASUBTYPE_PCO_DICAM_C8                0x0008 // pco.dicam C8
+#define CAMERASUBTYPE_PCO_DICAM_OEM9              0x0010 // pco.dicam OEM9 
 
 // DIMAX Family
 #define CAMERASUBTYPE_PCO_DIMAX_OEM4              0x0001
-#define CAMERASUBTYPE_PCO_DIMAX_36_ST_CLHS        0x0002 // pco.dimax 3.6 ST CLHS
-
+#define CAMERASUBTYPE_PCO_DIMAX_36_ST_CLHS        0x0002 // pco.dimax 3.6 ST CLHS (air/water)
+#define CAMERASUBTYPE_PCO_DIMAX_OEM8              0x0003
 
 // PIXELFLY Family
-#define CAMERASUBTYPE_PCO_PIXELFLY_13_SWIR   0x0001 // pco.pixelfly 1.3 SWIR
+#define CAMERASUBTYPE_PCO_PIXELFLY_13_SWIR        0x0001 // pco.pixelfly 1.3 SWIR
+#define CAMERASUBTYPE_PCO_PIXELFLY_100_BI_CLHS    0x0002 // pco.pixelfly 10 bi CLHS
+#define CAMERASUBTYPE_PCO_PIXELFLY_100_BI_C_CLHS  0x0003 // pco.pixelfly 10 bi Color CLHS
+#define CAMERASUBTYPE_PCO_PIXELFLY_260_CLHS       0x0004 // pco.pixelfly 26 CLHS
+#define CAMERASUBTYPE_PCO_PIXELFLY_260_C_CLHS     0x0005 // pco.pixelfly 26 Color CLHS
+
+// OEMs
+#define CAMERASUBTYPE_PCO_OEM_OEM5                0x0001
+#define CAMERASUBTYPE_PCO_OEM_OEM6                0x0002
+
+// HORIZON Family
+#define CAMERASUBTYPE_PCO_HORIZON_91_TDI_CLHS     0x0001 // pco.horizon 9.1 TDI CLHS
 
 
 
@@ -332,6 +349,8 @@
 #define SENSOR_KAI16000AXA        0x0160      // Kodak t:4960x3324, e:4904x3280, a:4872x3248
 #define SENSOR_KAI16000CXA        0x0161      // Kodak
 
+#define SENSOR_S11156_2048_02     0x0200      // Hamamatsu S11156-2048-02
+
 #define SENSOR_MV13BW             0x1010      // Micron
 #define SENSOR_MV13COL            0x1011      // Micron
 
@@ -341,7 +360,8 @@
 #define SENSOR_CIS2051_V1_BI_BW   0x2010      //Fairchild back illuminated
 
 #define SENSOR_LTN4323_BI_BW      0x2020      // BAE LTN4323 B/W
-#define SENSOR_LTN4323_BI_COL     0x2021      // BAE LTN4323 Color
+#define SENSOR_HWK4123_BI_BW      0x2030      // BAE HWK4123 B/W
+#define SENSOR_MST4323_BI_COL     0x2041      // BAE MST4323 Color
 
 
 //obsolete #define SENSOR_CCD87           0x2010         // E2V
@@ -373,6 +393,11 @@
 #define SENSOR_GPIXEL_GMAX0505_COL        0x5007  // Gpixel GMAX0505 26M
 
 #define SENSOR_GPIXEL_GSPRINT1105_BW      0x5008  // Gpixel GSPRINT1105 5M 
+
+#define SENSOR_GPIXEL_GLT5009BI_BW        0x500A  // Gpixel GLT5009 RevC TDI 9.1M
+
+#define SENSOR_SCD_CARDINAL1280B0_BW      0x6000  // SCD Cardinal 1280-B0
+
 // ------------------------------------------------------------------------ //
 // -- Defines for Get Info String Command: -------------------------------- //
 // ------------------------------------------------------------------------ //
@@ -422,6 +447,8 @@ const PCO_SENSOR_TYPE_DEF far pco_sensor[] =
               { SENSOR_KAI11002CM,             "Kodak KAI11002CM"                   },
               { SENSOR_KAI16000AXA,            "Kodak KAI16000AXA"                  },
               { SENSOR_KAI16000CXA,            "Kodak KAI16000CXA"                  },
+              
+              { SENSOR_S11156_2048_02,         "Hamamatsu S11156-2048-02"           },
 
                // Mircon sensor types
               { SENSOR_MV13BW,                 "Micron MV13BW"                      },
@@ -440,7 +467,8 @@ const PCO_SENSOR_TYPE_DEF far pco_sensor[] =
               { SENSOR_CIS2051_V1_BI_BW,       "Fairchild CIS2521 V1 I-Back BW"     },
 
               { SENSOR_LTN4323_BI_BW,          "BAE LTN4323 BW"                     },
-              { SENSOR_LTN4323_BI_COL,         "BAW LTN4323 Color"                  },
+              { SENSOR_HWK4123_BI_BW,          "BAE HWK4123 BW"                     },
+              { SENSOR_MST4323_BI_COL,         "BAE MST4323 Color"                  },
 
               { SENSOR_CMOSIS_CMV12000_BW,     "CMOSIS CMV12000 BW"                 },
               { SENSOR_CMOSIS_CMV12000_COL,    "CMOSIS CMV12000 Color"              },
@@ -453,7 +481,9 @@ const PCO_SENSOR_TYPE_DEF far pco_sensor[] =
               { SENSOR_GPIXEL_GSENSE5130_COL,  "Gpixel GSENSE5130 Color"            },
               { SENSOR_GPIXEL_GMAX0505_BW,     "Gpixel GMAX0505 BW"                 },
               { SENSOR_GPIXEL_GMAX0505_COL,    "Gpixel GMAX0505 Color"              },
-              { SENSOR_GPIXEL_GSPRINT1105_BW,  "Gpixel GSPRINT1105 BW"              }
+              { SENSOR_GPIXEL_GSPRINT1105_BW,  "Gpixel GSPRINT1105 BW"              },
+
+              { SENSOR_SCD_CARDINAL1280B0_BW,  "SCD Cardinal 1280-B0 BW"            }
 };
 
 const int far PCO_SENSOR_TYPE_DEF_NUM = sizeof(pco_sensor) / sizeof(pco_sensor[0]);
@@ -552,6 +582,18 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 #define GENERALCAPS3_OFFSET_BASED_TIMING_CALC          0x00010000 // Camera needs timing calculation exp = exp0 + x * expstep
 #define GENERALCAPS3_CAMERA_SETUP_PIXELFORMAT          0x00020000 // Camera can be switched to different pixelformat output
 #define GENERALCAPS3_CAMERA_SETUP_SENSOR_DYNRES        0x00040000 // Camera can be switched to different sensor dynamic resolution
+
+
+
+#define GENERALCAPS3_CAMERA_IS_LINESCAN                0x00080000 // Camera is linescan camera. All telegrams that change the sensor are now line settings.
+#define GENERALCAPS3_CAMERA_USE_HWIO_ALTERNATIVE       0x00100000 // use io signal and trigger connection telegram
+#define GENERALCAPS3_CAMERA_USE_COUNTER                0x00200000 // generic counter, supported with GENERALCAPS3_CAMERA_USE_HWIO_ALTERNATIVE
+#define GENERALCAPS3_TRIGGER_PERIOD_EXPOSURE           0x00400000 // Allows special triggermode with continuous exposure where trigger resets the exposure for a short time
+#define GENERALCAPS3_SUPPORT_LINESCAN_TDI              0x00800000 // Supports TDI Functions
+#define GENERALCAPS3_NO_DELAY_IN_AUTOTRIGGER           0x01000000 // For the new trigger. If Sensor is connected in a way it auto triggers, then one cna not set any delay
+
+
+
 
 // ------------------------------------------------------------------------ //
 // -- Defines for Get/Set Camera Temperature Command: --------------------- //
@@ -835,6 +877,34 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 
 
 // ------------------------------------------------------------------------ //
+// -- Defines for Get/Set Linerate: --------------------------------------- //
+// ------------------------------------------------------------------------ //
+
+#define SET_LINERATE_MODE_AUTO                            0x0000
+#define SET_LINERATE_MODE_LINERATE_HAS_PRIORITY           0x0001
+#define SET_LINERATE_MODE_EXPTIME_HAS_PRIORITY            0x0002
+#define SET_LINERATE_MODE_STRICT                          0x0003
+
+#define SET_LINERATE_STATUS_OK                            0x0000
+#define SET_LINERATE_STATUS_LPS_LIMITED_BY_READOUT        0x0001
+#define SET_LINERATE_STATUS_LPS_LIMITED_BY_EXPTIME        0x0002
+#define SET_LINERATE_STATUS_EXPTIME_CUT_TO_LINETIME       0x0004
+#define SET_LINERATE_STATUS_NOT_YET_VALIDATED             0x8000
+#define SET_LINERATE_STATUS_ERROR_SETTINGS_INCONSISTENT   0x8001
+
+
+// ------------------------------------------------------------------------ //
+// -- Defines for Frequency Base ------------------------------------------ //
+// ------------------------------------------------------------------------ //
+
+#define FREQUENCY_BASE_MILLIHZ                  0x0000
+#define FREQUENCY_BASE_HZ                       0x0001
+#define FREQUENCY_BASE_KHZ                      0x0002
+
+
+
+
+// ------------------------------------------------------------------------ //
 // -- Defines for Get/Set Delay Exposure Timetable Command: --------------- //
 // ------------------------------------------------------------------------ //
 
@@ -857,6 +927,29 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 #define TRIGGER_MODE_SLOW_EXTERNALEXPOSURECONTROL     0x0007
 #define TRIGGER_MODE_AUTO_MULTI_CHANNEL               0x0008
 #define TRIGGER_MODE_LOW_LATENCY_EXTERNALTRIGGER      0x0009
+#define TRIGGER_MODE_TRIGGER_PERIOD_EXPOSURE          0x000A
+
+
+// ------------------------------------------------------------------------ //
+// -- Defines for Get/Set Trigger Connection Command: --------------------- //
+// ------------------------------------------------------------------------ //
+
+#define TRIGGER_DESTINATION_SENSOR           0x00
+#define TRIGGER_DESTINATION_ACQUIRE          0x01
+#define TRIGGER_DESTINATION_VIRTUAL_FRAME    0x02
+#define TRIGGER_DESTINATION_RECORD_STOP      0x03
+
+
+#define TRIGGER_TYPE_LEVEL_HIGH              0x01
+#define TRIGGER_TYPE_LEVEL_LOW               0x02
+#define TRIGGER_TYPE_RISING_EDGE             0x04
+#define TRIGGER_TYPE_FALLING_EDGE            0x08
+
+
+
+
+
+
 
 // ------------------------------------------------------------------------ //
 // -- Defines for Force Trigger Command: ---------------------------------- //
@@ -864,6 +957,13 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 
 #define FORCE_TRIGGER_NOT_POSSIBLE                    0x0000
 #define FORCE_TRIGGER_SUCCESSFUL                      0x0001
+
+// ------------------------------------------------------------------------ //
+// -- Defines for Force Virtual Frame Trigger Command: -------------------- //
+// ------------------------------------------------------------------------ //
+
+#define FORCE_VIRTUAL_FRAME_TRIGGER_NOT_POSSIBLE       0x0000
+#define FORCE_VIRTUAL_FRAME_TRIGGER_SUCCESSFUL         0x0001
 
 
 // ------------------------------------------------------------------------ //
@@ -1056,6 +1156,18 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 #define MODULATECAPS_MODULATE_EXT_TRIG        0x00000002
 #define MODULATECAPS_MODULATE_EXT_EXP         0x00000004
 #define MODULATECAPS_MODULATE_ACQ_EXT_FRAME   0x00000008
+
+
+// ------------------------------------------------------------------------ //
+// -- Defines for Get/Set Sensor Readout Mode: ---------------------------- //
+// ------------------------------------------------------------------------ //
+#define SENSOR_READOUTMODE_TOP_BOTTOM                      0x01
+#define SENSOR_READOUTMODE_TOP_CENTER_BOTTOM_CENTER        0x02
+
+#define SENSOR_READOUTCTRL_STANDARD                        0x0001
+#define SENSOR_READOUTCTRL_REVERSE                         0x0002
+#define SENSOR_READOUTCTRL_EXTERNALCONTROL                 0x0004
+#define SENSOR_READOUTCTRL_ALTERNATING                     0x0008
 
 
 // ------------------------------------------------------------------------ //
@@ -1294,12 +1406,48 @@ extern const int far PCO_SENSOR_TYPE_DEF_NUM;
 // value in the parameters list
 #define HW_IO_SIGNAL_TIMING_MAX_VALUE               0x00000010
 
+
+// ------------------------------------------------------------------------ //
+// -- Defines for IO ------------------------------------------------------ //
+// ------------------------------------------------------------------------ //
+
+#define IO_SIGNAL_DIR_INPUT         0x0001
+#define IO_SIGNAL_DIR_OUTPUT        0x0002
+#define IO_SIGNAL_DIR_HIGH_Z        0x0004
+
+// SIGNAL Type definitions (up to 16 different types)
+#define IO_SIGNAL_TYPE_TTL          SIGNAL_TYPE_TTL           // Signal can be switched to TTL level
+#define IO_SIGNAL_TYPE_CONTACT      SIGNAL_TYPE_CONTACT       // Signal can be switched to contact level
+#define IO_SIGNAL_TYPE_RS485        SIGNAL_TYPE_RS485         // Signal can be switched to RS485 level
+#define IO_SIGNAL_TYPE_TTL_A_GND_B  SIGNAL_TYPE_TTL_A_GND_B   // Two pin diff. output, A = TTL, B = GND
+#define IO_SIGNAL_TYPE_MASK         SIGNAL_TYPE_MASK          // Signal type mask
+
+
+#define IO_SIGNAL_FILTER_OFF        0x0000                    // Filter is off
+
+
+#define IO_SIGNAL_INVERTER_OFF       0x0001
+#define IO_SIGNAL_INVERTER_ON        0x0002
+
+
+
 // ------------------------------------------------------------------------ //
 // -- Defines for HW LED Signal ------------------------------------------- //
 // ------------------------------------------------------------------------ //
 
 #define HW_LED_SIGNAL_OFF                               0x00000000
 #define HW_LED_SIGNAL_ON                                0xFFFFFFFF
+
+
+// ------------------------------------------------------------------------ //
+// -- Defines for TDI   --------------------------------------------------- //
+// ------------------------------------------------------------------------ //
+
+//bExpTimeModeSelect
+#define TDI_EXP_MODE_SEL_SINGLE_LINE         0x00  // SC2_Set_Delay_Exposure dwExposure: Line Period
+#define TDI_EXP_MODE_SEL_ACCUMULATED         0x01  // SC2_Set_Delay_Exposure dwExposure: Line Period * Num TDI Stages
+
+
 
 // ------------------------------------------------------------------------ //
 // -- Defines for pco.flim Commands --------------------------------------- //

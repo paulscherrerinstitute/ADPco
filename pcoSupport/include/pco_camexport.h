@@ -31,13 +31,19 @@
   #else
    #define SC2_SDK_FUNC __declspec(dllexport)
   #endif
+ #elif SC2_CAM_STATIC
+  #define SC2_SDK_FUNC
  #else
   #define SC2_SDK_FUNC __declspec(dllimport)
  #endif
 #endif
 
 #ifdef PCO_LINUX
- #define SC2_SDK_FUNC
+ #ifdef SC2_CAM_EXPORTS
+  #define SC2_SDK_FUNC __attribute__ ((__visibility__("default")))
+ #else
+  #define SC2_SDK_FUNC
+ #endif
  #define WINAPI
 #endif
 

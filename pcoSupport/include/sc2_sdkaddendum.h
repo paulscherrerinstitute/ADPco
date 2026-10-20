@@ -232,6 +232,15 @@ typedef struct
 
 typedef void(* pco_image_done_cb_fn) (PCO_Image_cb *data);
 
+typedef struct
+{
+  WORD alloc_id;
+  UINT64 segment_size;
+  double percent_of_total;
+  DWORD camera_serial;
+
+}PCO_HsrSegment;
+
 
 /*
 //loglevels for interface dll

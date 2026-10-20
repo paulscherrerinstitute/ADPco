@@ -46,6 +46,10 @@
 // SHORT: 16bit signed
 // DWORD: 32bit unsigned
 
+#if !defined SIGNAL_STR_MAX_NAME_LENGTH
+#error Please include sc2_common.h before including sc2_sdkstructures.h
+#endif
+
 #define PCO_STRUCTREV      102         // set this value to wStructRev
 
 #define PCO_BUFCNT 16                   // see PCO_API struct
@@ -61,18 +65,21 @@
 
 // SDK-Dll internal defines (different to interface type in sc2_defs.h!!!
 // In case you're going to enumerate interface types, please refer to sc2_defs.h.
-#define PCO_INTERFACE_FW      1         // Firewire interface
-#define PCO_INTERFACE_CL_MTX  2         // Cameralink Matrox Solios / Helios
-#define PCO_INTERFACE_GENICAM 3         // Genicam wrapper interface
-#define PCO_INTERFACE_CL_NAT  4         // Cameralink National Instruments
-#define PCO_INTERFACE_GIGE    5         // Gigabit Ethernet
-#define PCO_INTERFACE_USB     6         // USB 2.0
-#define PCO_INTERFACE_CL_ME4  7         // Cameralink Silicon Software Me4
-#define PCO_INTERFACE_USB3    8         // USB 3.0 and USB 3.1 Gen1
-#define PCO_INTERFACE_WLAN    9         // WLan (Only control path, not data path)
-#define PCO_INTERFACE_CLHS   11         // Cameralink HS 
-//#define PCO_INTERFACE_CLHS_SISO   12    // reserved for CLHS only SISO Me5 grabber 
-//#define PCO_INTERFACE_CLHS_KAYA   13    // reserved for CLHS only KAYA Komodo grabber
+#define PCO_INTERFACE_FW           1       // Firewire interface
+#define PCO_INTERFACE_CL_MTX       2       // Cameralink Matrox Solios / Helios
+#define PCO_INTERFACE_GENICAM      3       // Genicam wrapper interface
+#define PCO_INTERFACE_CL_NAT       4       // Cameralink National Instruments
+#define PCO_INTERFACE_GIGE         5       // Gigabit Ethernet
+#define PCO_INTERFACE_USB          6       // USB 2.0
+#define PCO_INTERFACE_CL_ME4       7       // Cameralink Silicon Software Me4
+#define PCO_INTERFACE_USB3         8       // USB 3.0 and USB 3.1 Gen1
+#define PCO_INTERFACE_WLAN         9       // WLan (Only control path, not data path)
+#define PCO_INTERFACE_CLHS         11      // =0x0B Cameralink HS (common) 
+#define PCO_INTERFACE_CLHS_SISO    12      // reserved for CLHS only SISO Me5 grabber 
+#define PCO_INTERFACE_CLHS_KAYA    13      // reserved for CLHS only KAYA Komodo grabber
+#define PCO_INTERFACE_CLHS_DALSA   14      // reserved for CLHS only DALSA Xtium grabber
+#define PCO_INTERFACE_CLHS_KAYA_V2 15      // reserved for CLHS only KAYA Komodo V2 grabber
+#define PCO_INTERFACE_CLHS_HSR     16      // reserved for CLHS only HSR pco grabber
 
 #define PCO_LASTINTERFACE PCO_INTERFACE_CLHS
 
@@ -467,13 +474,122 @@ typedef struct
 
 typedef struct
 {
-  WORD              wSize;             
+  WORD              wSize;
   WORD              wNumOfSignals;     // Parameter to fetch the num. of descr. from the camera
   PCO_Single_Signal_Desc strSingeSignalDesc[NUM_MAX_SIGNALS];// Array of singel signal descriptors // 4004
   DWORD             dwDummy[524];      // reserved for future use.    // 6100
 } PCO_Signal_Description;
 
-#define PCO_SENSORDUMMY 7
+
+/*
+    New IO signals are more flexible, and IO config is now independent from Trigger config.
+    A plug can be used as output or as input, depending on description.
+    Thus the user has more possibilities to connect camera internal signals to external hardware.
+
+Example: Camera has 4 Selectable IO Lines (Plug 0,1,2 and CamLink Signal)
+           Plug 0,1 and CamLink can be Input or Output
+           Plug 1 can only be Output
+         Camera has 5 Selectable IO Output Sources
+         Camera has 6 Selectable Trigger Sources
+
+                   IO                                                Trigger
+              Set_IO_Signal                                   Set_Trigger_Connection
+                      Direction   OutputSigIndex           Source            Destination
+
+    Line0 (Plug 0)       in     -->      -   -   -   -     Line0       -->   TRIGGER_DESTINATION_SENSOR
+                                                            |
+    CC1 (CamLink Signal) in     -->      -   -   -   -     CC1         -->   TRIGGER_DESTINATION_AQUIRE
+                                                            |
+    Line1 (Plug 1)       out    <-- BUSY                   COUNTER0END -->   TRIGGER_DESTINATION_VIRTUAL_FRAME
+                                     |                      |
+    Line2 (Plug 2)       out    <-- STATUS_LINE             |
+                                     |                      |
+                                     |                      |
+                                     |                      |
+                             IO Output Sources:       Trigger Sources:
+                                 ACQUISITION_ACTIVE      OFF
+                                 BUSY                    LINE0
+                                 STATUS_LINE             LINE1
+                                 STATUS_EXPOSURE         LINE2
+                                 FRAME_ACTIVE            CC1
+                                                         COUNTER0END
+
+  New IO can be seen as three different parts:
+  Part I: Physical plugs at the back of the camera with a unique name for each input, e.g. Line0, CC1, Line1.., or output.
+  Part II: Trigger sources, which can be one of the phyiscal plugs, e.g. Line0, CC1 or an camera internal source, like Counter0end.
+  Part III: Trigger destination, where a destination can be connected to either a physical input, or an internal signal.
+*/
+
+typedef struct
+{
+  char szSignalName[SIGNAL_STR_MAX_NAME_LENGTH];
+}SigString;
+
+typedef struct
+{ // Describes the IO block of a camera. This replaces HWIO/PCO_Single_Signal_Desc completely. 
+  // An IO block can be either input or output. See wDirection for availability of in and/or out.
+  WORD        wSize;                    // struct size
+  char        szName[SIGNAL_STR_MAX_NAME_LENGTH];// signal name (e.g. "LINE0", "LINE1", "CC1",.) // 34
+  WORD        wDirection;              // see sc2_defs.h (e.g. IO_SIGNAL_DIR_INPUT ...)
+  WORD        wType;                   // see sc2_defs.h (e.g. IO_SIGNAL_TYPE_TTL, ... )
+  WORD        wFilter;                 // see sc2_defs.h
+  WORD        wInverter;               // see sc2_defs.h
+  WORD        wNumOutputSignals;       // see SC2_Get_IO_Output_Signal_Names  // 44
+  DWORD       dwReserved;                                                     // 48
+  SigString   *pszOutputSignals;       // wNumOutputSignals strings with len SIGNAL_STR_MAX_NAME_LENGTH, indicating available
+                                       // output signals (STATUS_EXPOSURE, BUSY, etc.)
+                                       // This is used to select an output signal, e.g. 0 is 'exp out', in SC2_Set_IO_Signal
+                                       // input signals (Line0, Line1, etc.)
+}PCO_Single_Signal_IO_Desc;
+
+typedef struct
+{
+  WORD        wSize;                    // struct size
+  WORD        wReserved;
+  DWORD       dwMaxDelay;               // us; 0 = no delay available
+  DWORD       dwSteppingDelay;          // ps
+  DWORD       dwMaxMultiplier;          // 0 = no Multiplier
+  DWORD       dwMaxDivider;             // 0 = no Divider available
+  DWORD       dwReserved;
+  char        szName[SIGNAL_STR_MAX_NAME_LENGTH];// trigger destination name (e.g. "Sensor", "Acquire", "..",.)
+}PCO_Single_Trigger_Destination_Description;
+
+typedef struct
+{
+  WORD              wSize;             
+  WORD              wNumOfSignals;     // Parameter to fetch the num. of descr. from the camera
+  WORD              wNumDestinations;
+  WORD              wNumTriggerSourceSignals; // see SC2_Get_IO_Output_Signal_Names
+  PCO_Single_Signal_IO_Desc            *pstrSingleSignalIO_DESC;
+  PCO_Single_Trigger_Destination_Description* pstrSingleTrigDestinationDESC;
+  SigString*        pszTriggerSourceSignals;  // wNumTriggerSourceSignals strings with len SIGNAL_STR_MAX_NAME_LENGTH, indicating available
+  WORD              wDescriptionSize;  // Size to be used for allocation of buffer for getting this struct
+  WORD              wReserved[3];
+} PCO_Signal_IO_Description;
+
+typedef struct
+{
+  WORD wSize;
+  WORD wNumBand;                       // Band number
+  WORD wNumOfStages;                   // Number of stages in this band. 0,1,2...N. E.g. the this band has got 10 stages, then
+                                       // below list will have 10 members, each with a the number of possible stages, e.g. 2,4,8,16..128
+  WORD ZZwAlignDummy;
+  WORD *pwNumStages;                   // Dynamic list of possible stages
+} PCO_TDI_Stage_Bands_Desc;
+
+typedef struct
+{
+  WORD              wSize;
+  WORD              wNumTDIBands;      // Num of TDI bands. A band can be seen as a block of lines. Each line is 'moving'
+                                       // with the object to view for a short time. Each band has got a number of stages (lines),
+                                       // which can be set, e.g. 2 lines, 4 lines, etc.
+  DWORD             dwZZDummy;
+  PCO_TDI_Stage_Bands_Desc *pstrBands;         // Dynamic list of number of stages per band. For two stages this is pwNumEntries[0] and [1].
+  WORD              wDescriptionSize;  //  Size to be used for allocation of buffer for getting this struct
+  WORD              wReserved[3];
+} PCO_TDI_Stage_Description;
+
+#define PCO_SENSORDUMMY 4
 typedef struct
 {
   WORD        wSize;                   // Sizeof this struct
@@ -507,8 +623,11 @@ typedef struct
   WORD        wIntensifiedVoltage;     // MCP Voltage: ~700...~1100V
   WORD        wIntensifiedGatingMode;  // MCP gating mode 0: MCP always on; 1: MCP will be off after exp.; 2: MCP will be off till trigger
   DWORD       dwIntensifiedPhosphorDecay_us; // MCP phosphor decay (additional exp. time till phosphor light vanishes)
-  WORD        ZZwDummy[32];                                            // 1872
+  WORD        ZZwDummy[28];                                            // 1872
+  PCO_TDI_Stage_Description *pstrTDIStageDesc; // TDI stages descriptor
   PCO_Signal_Description strSignalDesc;// Signal descriptor            // 7972
+  DWORD       ZZdwAlignDummy2;                                         // 7976 / 8 = 997
+  PCO_Signal_IO_Description *pstrSignalIODesc; // Pointer to new IO signal description
   DWORD       ZZdwDummy[PCO_SENSORDUMMY];                              // 8000
 } PCO_Sensor;
 
@@ -530,6 +649,42 @@ typedef struct
 
 typedef struct
 {
+  WORD        wSize;                   // telegram length 
+  WORD        wIndex;                  // index of the IO signal (possible value: SC2_Get_IO_Signal_Count_Response.wNumOfSignals-1)
+  WORD        wDirection;              // see sc2_defs.h (e.g. IO_SIGNAL_DIR_INPUT, ...)
+  WORD        wOutputSignalIndex;      // see SC2_get_IO_output_signal_names  (note: each IO signal can have multiple output signals)
+  WORD        wInverter;               // see sc2_defs.h
+  WORD        wType;                   // see sc2_defs.h (e.g. IO_SIGNAL_TYPE_TTL, ...)
+  WORD        wFilter;                 // see sc2_defs.h           // 14
+  WORD        ZZwReserved[25];         //                          // 64
+} PCO_IO_Signal;
+
+typedef struct
+{
+  WORD        wSize;
+  BYTE        bTriggerDestinationIndex; // see sc2_defs.h
+  BYTE        bTriggerSourceIndex;      // 0 ... wNumEntries(of Get_Trigger_Source_Names)-1
+  BYTE        bTimebaseDelay;           // TIMEBASE_MS, TIMEBASE_US, TIMEBASE_NS
+  BYTE        bTriggerType;             // see sc2_defs.h (e.g. TRIGGER_TYPE_RISING_EDGE, ...)   // 6
+  WORD        wReserved;                                            // 8
+  DWORD       dwDelay;                  // range 0 ... dwMaxDelay
+  DWORD       dwMultiplier;             // 1 ... dwMaxMultiplier; Steps: Power of 2; // 16
+  DWORD       dwDivider;                // 1 ... dwMaxDivider       // 20
+  WORD        ZZwReserved[22];          //                          // 64
+}PCO_IO_Trigger;
+
+typedef struct
+{
+  WORD        wSize;
+  BYTE        bTDIBandIndex;            // 0 ... wNumTDIBands-1
+  BYTE        bExpTimeModeSelect;       // see sc2_defs.h
+  WORD        wTDIStage;                // Parameter to control number of stages. See PCO_TDI_Stage_Description for possible values
+  WORD        ZZwReserved[24];          //                          // 64
+} PCO_TDI_Stage;
+
+
+typedef struct
+{
   WORD   wSize;
   WORD   wDummy;
   DWORD  FrameTime_ns;                 // Frametime replaces COC_Runtime
@@ -544,7 +699,7 @@ typedef struct
 } PCO_ImageTiming;
 
 
-#define PCO_TIMINGDUMMY 24
+#define PCO_TIMINGDUMMY 12
 typedef struct
 {
   WORD        wSize;                   // Sizeof this struct
@@ -552,7 +707,7 @@ typedef struct
   WORD        wTimeBaseExposure;       // Timebase expos 0:ns, 1:us, 2:ms
   WORD        wCMOSParameter;          // Line Time mode: 0: off 1: on    // 8
   DWORD       dwCMOSDelayLines;        // See next line
-  DWORD       dwCMOSExposureLines;     // Delay and Exposure lines for lightsheet // 16
+  DWORD       dwCMOSExposureLines;     // Delay and Exposure lines for line scanning mode // 16
   DWORD       dwDelayTable[PCO_MAXDELEXPTABLE];// Delay table             // 80
   DWORD       ZZdwDummy1[110];                                            // 520
   DWORD       dwCMOSLineTimeMin;       // Minimum line time in ns
@@ -563,7 +718,7 @@ typedef struct
   DWORD       dwExposureTable[PCO_MAXDELEXPTABLE];// Exposure table       // 600
   DWORD       ZZdwDummy2[110];                                            // 1040
   DWORD       dwCMOSFlags;             // Flags indicating the option, whether it is possible to LS-Mode with slow/fast scan, etc.
-  DWORD       ZZdwDummy3;
+  DWORD       dwCMOSLineTimeMinStep;   // Minimum line time step in ns
   WORD        wTriggerMode;            // Trigger mode                    // 1050
                                        // 0: auto, 1: software trg, 2:extern 3: extern exp. ctrl
   WORD        wForceTrigger;           // Force trigger (Auto reset flag!)
@@ -587,7 +742,10 @@ typedef struct
   DWORD       dwFrameRate;             // Dimax: Framerate in mHz
   DWORD       dwFrameRateExposure;     // Dimax: Exposure time in ns      // 2300
   WORD        wTimingControlMode;      // Dimax: Timing Control Mode: 0->Exp./Del. 1->FPS
-  WORD        wFastTimingMode;         // Dimax: Fast Timing Mode: 0->off 1->on
+  WORD        wFastTimingMode;         // Dimax: Fast Timing Mode: 0->off 1->on // 2304
+  PCO_IO_Signal  *pIOSignal;           // Pointer to pointer array of IO signals
+  PCO_IO_Trigger *pIOTrigger;          // Poinoter to pointer array of IO triggers
+  PCO_TDI_Stage *pTDIStage;            // Pointer to pointer array of TDI stages parameter
   WORD        ZZwDummy[PCO_TIMINGDUMMY];                                               // 2352
 } PCO_Timing;
 
@@ -904,6 +1062,7 @@ typedef struct
 #define LENSCONTROL_STATUS_NOAPERTURE     0x00000004 // No aperture settings are possible
 #define LENSCONTROL_STATUS_MANUALFOCUS    0x00000008 // No focus settings are possible
 #define LENSCONTROL_STATUS_WAITINGFORLENS 0x00000010 // Birger is here, but no lens
+#define LENSCONTROL_STATUS_MOTOR_ZOOM     0x00000020 // Zoom is motorized: Zoom settings are possible
 
 #define LENSCONTROL_IN_LENSVALUE_RELATIVE 0x00001000 // Set focus relative to current position
 

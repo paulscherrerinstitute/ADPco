@@ -367,6 +367,8 @@ DWORD GetErrorSource(DWORD dwerr);
 #define PCO_WARNING_SDKDLL_COC_VALCHANGE            0xC0003003 // value change when testing COC
 #define PCO_WARNING_SDKDLL_COC_STR_SHORT            0xC0003004 // string buffer to short for replacement
 #define PCO_WARNING_SDKDLL_TIMING_SIGNAL_NOTSELECTED 0xC0003005 // timing signal is not selected
+#define PCO_WARNING_SDKDLL_LINE_TIMING_CHANGE       0xC0003006 // When pixelrate changes app must call PCO_GetCmosLineTiming
+                                                               // to get new dwCMOSLineTimeMinStep
 
 
   // The following error messages have been shifted to the common error code range:
@@ -517,7 +519,14 @@ DWORD GetErrorSource(DWORD dwerr);
 
 #define PCO_ERROR_FIRMWARE_POWER_UP_SEQUENCE        0x80001042 // ERROR during Power up
 
-
+#define PCO_ERROR_FIRMWARE_TIMESTAMP                0x80001043 // Timestamp error in arm function
+#define PCO_ERROR_FIRMWARE_HW_IO                    0x80001044 // Hw io error in arm function
+#define PCO_ERROR_FIRMWARE_METADATA_MODE            0x80001045 // Metadata mode error in arm function
+#define PCO_ERROR_FIRMWARE_EXPOSURE                 0x80001046 // Exposure error in arm function
+#define PCO_ERROR_FIRMWARE_DELAY                    0x80001047 // Delay error in arm function
+#define PCO_ERROR_FIRMWARE_BINNING_SETTING          0x80001048 // Binning error in arm function
+#define PCO_ERROR_FIRMWARE_INTERNAL                 0x80001049 // Internal errors from hal-,drv-,api- and csl-layer
+#define PCO_ERROR_FIRMWARE_ACQUISITION_SETTINGS     0x8000104A // Invalid settings for fpga acquisition module in arm function
 
 // ------------------------------------------------------------------------------------------------------ //
 // -- 4.5.a. Error codes for firmware update ------------------------------------------------------------ //

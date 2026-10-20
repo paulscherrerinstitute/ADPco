@@ -61,13 +61,13 @@ static const char* PCO_ERROR_COMMON_TXT[] =
   "",                                              // 0xA0000015
   "",                                              // 0xA0000016
   "",                                              // 0xA0000017
-  "A file could not be opened",                    // 0xA0000018
-  "Read file failed",                              // 0xA0000019
-  "Write file failed",                             // 0xA000001A
-  "File format unknown",                           // 0xA000001B
-  "Test checksum of file failed",                  // 0xA000001C
-  "Test of values in file failed",                 // 0xA000001D
-  "Test version of file failed",                   // 0xA000001E  
+  "A file could not be opened",                    // 0xA0000018  PCO_ERROR_FILE_OPEN
+  "Read file failed",                              // 0xA0000019  PCO_ERROR_FILE_READ
+  "Write file failed",                             // 0xA000001A  PCO_ERROR_FILE_WRITE
+  "File format unknown",                           // 0xA000001B  PCO_ERROR_FILE_UNKNOWN_FORMAT
+  "Test checksum of file failed",                  // 0xA000001C  PCO_ERROR_FILE_CHECKSUM
+  "Test of values in file failed",                 // 0xA000001D  PCO_ERROR_FILE_WRONG_VALUE
+  "Test version of file failed",                   // 0xA000001E  PCO_ERROR_FILE_WRONG_VERSION
 };
 
 const int COMMON_MSGNUM = sizeof(PCO_ERROR_COMMON_TXT) / sizeof(PCO_ERROR_COMMON_TXT[0]);
@@ -132,7 +132,7 @@ static const char* PCO_ERROR_DRIVER_TXT[] =
   "camera head is not connected.",                 // 0x80002030  PCO_ERROR_DRIVER_HEAD_LOST
   "camera head power down.",                       // 0x80002031  PCO_ERROR_DRIVER_HEAD_POWER_DOWN
   "camera started.",                               // 0x80002032  PCO_ERROR_DRIVER_CAMERA_BUSY
-  "pending buffers in driver queue."               // 0x80002033  PCO_ERROR_DRIVER_BUFFERS_PENDING
+  "pending buffers in driver queue.",              // 0x80002033  PCO_ERROR_DRIVER_BUFFERS_PENDING
 
 };
 
@@ -166,7 +166,7 @@ static const char* PCO_ERROR_SDKDLL_TXT[] =
   "Buffer is already queued.",                     // 0x80003012  PCO_ERROR_SDKDLL_BUFFERALREADYQUEUED
   "Buffer is not queued.",                         // 0x80003013  PCO_ERROR_SDKDLL_BUFFERNOTQUEUED
   "Signature error inside the convert dll.",       // 0x80003014  PCO_ERROR_SDKDLL_SIGNATURE_FAILED 
-  "A call to dotphoton dll failed."                // 0x80003015  PCO_ERROR_SDKDLL_DOTPHOTON_FAILED
+  "A call to dotphoton dll failed.",               // 0x80003015  PCO_ERROR_SDKDLL_DOTPHOTON_FAILED
   "", "", "", "", "", "",                          // 0x80003016 - 0x8000301A
   "", "", "", "", "",                              // 0x8000301B - 0x80003020
   
@@ -320,11 +320,18 @@ static const char* PCO_ERROR_FIRMWARE_TXT[] =
 
   "COC modulate period time invalid.",             // 0x80001040 PCO_ERROR_FIRMWARE_COC_PERIOD_INVALID
   "COC modulate monitor time invalid",             // 0x80001041 PCO_ERROR_FIRMWARE_COC_MONITOR_INVALID
-  "ERROR during Power up"                          // 0x80001042 PCO_ERROR_FIRMWARE_POWER_UP_SEQUENCE         
+  "ERROR during Power up",                         // 0x80001042 PCO_ERROR_FIRMWARE_POWER_UP_SEQUENCE         
 
-  "", "", "", "", "",                              // 0x80001043 - 0x8000104F
-  "", "", "", "", "",
-  "", "", "",                  
+  "Timestamp error in arm function",               // 0x80001043 PCO_ERROR_FIRMWARE_TIMESTAMP
+  "Hw io error in arm function",                   // 0x80001044 PCO_ERROR_FIRMWARE_HW_IO
+  "Metadata mode error in arm function",           // 0x80001045 PCO_ERROR_FIRMWARE_METADATA_MODE
+  "Exposure error in arm function",                // 0x80001046 PCO_ERROR_FIRMWARE_EXPOSURE
+  "Delay error in arm function",                   // 0x80001047 PCO_ERROR_FIRMWARE_DELAY
+  "Binning error in arm function",                 // 0x80001048 PCO_ERROR_FIRMWARE_BINNING_SETTING
+  "Internal errors in hal,drv,api,csl-layer",      // 0x80001049 PCO_ERROR_FIRMWARE_INTERNAL
+  "Invalid settings for fpga acq.mod. in arm",     // 0x8000104A PCO_ERROR_FIRMWARE_ACQUISITION_SETTINGS
+
+  "", "", "", "", "",                              // 0x8000104B - 0x8000104F
 
   "Attempt to open unknown device for update.",    // 0x80001050  PCO_ERROR_FIRMWARE_UNKNOWN_DEVICE     
   "Attempt to open device not available.",         // 0x80001051  PCO_ERROR_FIRMWARE_DEVICE_NOT_AVAIL   
@@ -370,7 +377,7 @@ static const char* PCO_ERROR_FIRMWARE_TXT[] =
   "", "", "", "", "",                              // 0x80001097 - 0x8000109B
   "", "", "", "",                                  // 0x8000109C - 0x8000109F
   "External modulation frequency out of range.",   // 0x80001100 PCO_ERROR_FIRMWARE_FLICAM_EXT_MOD_OUT_OF_RANGE
-  "Sync PLL not locked."                           // 0x80001101 PCO_ERROR_FIRMWARE_FLICAM_SYNC_PLL_NOT_LOCKED
+  "Sync PLL not locked.",                          // 0x80001101 PCO_ERROR_FIRMWARE_FLICAM_SYNC_PLL_NOT_LOCKED
 };
 
 const int FIRMWARE_MSGNUM = sizeof(PCO_ERROR_FIRMWARE_TXT) / sizeof(PCO_ERROR_FIRMWARE_TXT[0]);
@@ -415,9 +422,10 @@ static const char* PCO_ERROR_SDKDLLWARNING_TXT[] =
   "value change when testing COC",                 // 0xC0003003  PCO_WARNING_SDKDLL_COC_VALCHANGE
   "string buffer to short for replacement",        // 0xC0003004  PCO_WARNING_SDKDLL_COC_STR_SHORT
   "Timing signal is not selected",                 // 0xC0003005  PCO_WARNING_SDKDLL_TIMING_SIGNAL_NOTSELECTED 
-  "", "", "", "", "", "", "", "", "", "",         // 0xC0003006 - 0xC000300F
+  "Pixelrate changed: Call PCO_GetCmosLineTiming", // 0xC0003006  PCO_WARNING_SDKDLL_LINE_TIMING_CHANGE
+  "", "", "", "", "", "", "", "", "",              // 0xC0003007 - 0xC000300F
   "",                                              // 0xC0003010
-  "Files already exist"                            // 0xC0003011  PCO_WARNING_SDKDLL_RECORDER_FILES_EXIST
+  "Files already exist",                           // 0xC0003011  PCO_WARNING_SDKDLL_RECORDER_FILES_EXIST
 };
 
 const int SDKDLLWARNING_MSGNUM = sizeof(PCO_ERROR_SDKDLLWARNING_TXT) / sizeof(PCO_ERROR_SDKDLLWARNING_TXT[0]);
