@@ -733,7 +733,9 @@ asynStatus ADPco::getCameraInfo()
         }
     }
 
-    setIntegerParam(PcoAdcMode, pcoSensor_.wADCOperation);
+    if (pcoSensor_.strDescription.wNumADCsDESC >= 1) {
+        setIntegerParam(PcoAdcMode, pcoSensor_.wADCOperation);
+    }
 
     setIntegerParam(PcoBitAlignment, pcoImage_.wBitAlignment);
 
@@ -762,8 +764,7 @@ asynStatus ADPco::getCameraInfo()
  
     WORD interfaceType=2, format=0, reserved1=0, reserved2=0;
     errorCode = PCO_GetInterfaceOutputFormat(cameraHandle_, &interfaceType, &format, &reserved1, &reserved2);
-    CHECK_ERROR(errorCode, "PCO_GetInterfaceOutputFormat");
-    if (status == asynSuccess) {
+    if (errorCode == PCO_NOERROR) {
         setIntegerParam(PcoReadoutMode, (format >> 8));
     }
 
