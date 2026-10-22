@@ -302,7 +302,7 @@ void ADPco::acquisitionTask()
                     numImagesCounter++;
                     imageCounter++;
                 }
-                errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, bufNum,  arraySizeX_, arraySizeY_, sizeof(WORD));
+                errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, bufNum,  arraySizeX_, arraySizeY_, sizeof(WORD)*8);
                 CHECK_ERROR(errorCode, "PCO_AddBufferEx");
             }
         } else if ((errorCode & PCO_ERROR_TIMEOUT) != PCO_ERROR_TIMEOUT &&
@@ -519,7 +519,7 @@ asynStatus ADPco::startAcquisition()
     }
 
     for (size_t i=0; i<10; i++) {
-        errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, pcoBuffer_[i].sBufNum, arraySizeX_, arraySizeY_, sizeof(WORD));
+        errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, pcoBuffer_[i].sBufNum, arraySizeX_, arraySizeY_, sizeof(WORD)*8);
         CHECK_ERROR(errorCode, "PCO_AddBufferEx");
         if (status) return (asynStatus)status;
     }
