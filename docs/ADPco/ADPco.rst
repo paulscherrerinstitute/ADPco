@@ -8,23 +8,31 @@ ADPco
 
 .. _Excelitas:    https://www.excelitas.com
 .. _pco.edge:     https://www.excelitas.com/product-category/pcoedge-cooled-scmos-cameras
-.. _pco.sdk:      https://www.excelitas.com/product/pco-software-development-kits
+.. _pco.sdk:      https://www.excelitas.com/product/pco-software-development-kits#custom-tab-general-sdk
+.. _frame grabber drivers: https://www.excelitas.com/product/pco-interface-drivers#custom-tab-clhs
 
 Overview
 --------
 
-ADPco uses Excelitas pco.sdk_. It should work on both Windows and Linux, although
-it has only been tested on Linux.  It has been  tested only with the pco.edge_ 5.5 CHLS cameras and
-Silicon Software microEnable 5 marathon VF2 cameralink HS frame grabber.
+ADPco uses Excelitas_ pco.sdk_. It has been tested on both Windows and Linux, although
+it is mainly used on Linux. It has been tested only with pco.edge_ 5.5 and 10 bi CLHS cameras, with
+Silicon Software microEnable 5 marathon AF2/VF2 cameralink HS frame grabber and KAYA Komodo I/II CLHS
+frame grabbers.
 It may work with other pco cameras, but feathers may be missing. E.g. it does not support
 acquire to and read from camera internal memory.
 
 The header files and Windows import libraries are include, so it is ready to build for Windows.
 
-For Linux, the pco.sdk is provided by vendor as a debian package.
-The header files and libraries are located in /opt/pco/pco.sdk  For non-debian derived systems,
-it is simplest to install it on debian system and copy files over. The other option is
-to use *dpkg-deb* tool to extract the package contents, if it is provided by your Linux distribution.
+For Linux, the pco.sdk is provided by vendor as debian and RPM packages.
+The header files and libraries are located in /opt/pco/pco.sdk. For other systems,
+it is simplest to install it on a debian or RPM-based system and copy files over.
+
+The `frame grabber drivers`_ are available from Excelitas. Some notes:
+
+* For Silicon Software driver, a normal user needs to be added to the "video" group to access the device.
+* For KAYA driver, the VisionPoint libraries are prebuilt for recent Ubuntu LTS. **libKYFGLib.so**
+  requires system opencv_core/imgcodecs/imgproc/videoio libraries. For other systems,
+  symbolic links to your system opencv libraraies might work.
 
 Define this in the areaDetector top level CONFIG_SITE.local file,::
 
