@@ -151,3 +151,8 @@ The command to configure an ADPco camera in the startup script is::
 
 MEDM screens
 ------------
+The following is the MEDM screen ADPco.adl when controlling a pco.edge 5.5 CLHS camera.
+
+.. figure:: ADPco.png
+  :align: center
+
