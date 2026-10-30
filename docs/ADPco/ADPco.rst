@@ -83,6 +83,33 @@ specific to ADPco.
      - PCO_BIT_ALIGNMENT
      - If the dynamic resolution of the camera is less than 16 bit/pixel and because the transferred
        image data is always sent as one WORD(16 bit) per pixel, the data can be either MSB or LSB aligned.
+   * - EmbedTimeStamp, EmbedTimeStamp_RBV
+     - mbbo, mbbi
+     - PCO_EMBED_TIME_STAMP
+     - If supported by the camera, recording time of images can be included in raw image data.
+       This timestamp consists of a continuous 1-based image number and the date and time information of the camera clock.
+       Choices depends on the camera, can contain the following values:
+
+       - Off (0)
+       - BCD (1) The first 14 pixels of the image data holds image number and timestamp in packed BCD code.
+       - BCD+ASCII (2) Combines both.
+       - ASCII (3) An 8 by 8 pixel matrix is used per ASCII digit.
+   * - MetaData, MetaData_RBV
+     - mbbo, mbbi
+     - PCO_META_DATA
+     - When turned on, a meta data block with additional information is added at the end of each image.
+   * - TimeStampMode, TimeStampMode_RBV
+     - bo, bi
+     - PCO_TIME_STAMP_MODE
+     - Controls whether the TimeStamp attribute comes from the camera internal time stamp or from the EPICS time.
+       Choices are Camera (0), and EPICS (1).
+       Choice Camera(0) is only valid when **EmbedTimeStamp** is *BCD* or *BCD+ASCII*, or **MetaData** is *On*.
+   * - UniqueIdMode, UniqueIdMode_RBV
+     - bo, bi
+     - PCO_UNIQUE_ID_MODE
+     - Controls whether the UniqueId attribute comes from the camera internal value or from the driver.
+       Choices are Camera (0), and Driver (1).
+       Choice Camera(0) is only valid when **EmbedTimeStamp** is *BCD* or *BCD+ASCII*, or **MetaData** is *On*.
    * - RebootCamera
      - bo
      - PCO_REBOOT_CAMERA
@@ -92,10 +119,16 @@ specific to ADPco.
      - mbbo,mbbi
      - PCO_ACQUIRE_MODE
      - The function of <acq enbl> input.
+   * - FramesErrored_RBV
+     - ai
+     - PCO_FRAMES_ERRORED
+     - The number of frames with error status since the beginning of current acquisition.
    * - FramesDropped_RBV
      - ai
      - PCO_FRAMES_DROPPED
      - The number of frames dropped since the beginning of current acquisition.
+       This is only valid when **EmbedTimeStamp** is *BCD* or *BCD+ASCII*, or **MetaData** is *On*.
+
 
 IOC startup script
 ------------------

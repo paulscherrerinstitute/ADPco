@@ -121,7 +121,6 @@ record(mbbi, "$(P)$(R)CameraSetup_RBV")
 
 record(mbbo, "$(P)$(R)ReadoutMode") 
 {
-    field(PINI, "YES")
     field(DTYP, "asynInt32")
     field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_READOUT_MODE")
 }
@@ -132,6 +131,71 @@ record(mbbi, "$(P)$(R)ReadoutMode_RBV")
     field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_READOUT_MODE")
     field(SCAN, "I/O Intr")
 }
+
+record(mbbo, "$(P)$(R)EmbedTimeStamp")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_EMBED_TIME_STAMP")
+}
+
+record(mbbi, "$(P)$(R)EmbedTimeStamp_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_EMBED_TIME_STAMP")
+    field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)MetaData")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_META_DATA")
+}
+
+record(mbbi, "$(P)$(R)MetaData_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))PCO_META_DATA")
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)TimeStampMode")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT) $(ADDR),$(TIMEOUT=1))PCO_TIME_STAMP_MODE")
+    field(ZNAM, "Camera")
+    field(ONAM, "EPICS")
+}
+
+record(bi, "$(P)$(R)TimeStampMode_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT) $(ADDR),$(TIMEOUT=1))PCO_TIME_STAMP_MODE")
+    field(ZNAM, "Camera")
+    field(ONAM, "EPICS")
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)UniqueIdMode")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT) $(ADDR),$(TIMEOUT=1))PCO_UNIQUE_ID_MODE")
+    field(ZNAM, "Camera")
+    field(ONAM, "Driver")
+}
+
+record(bi, "$(P)$(R)UniqueIdMode_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT) $(ADDR),$(TIMEOUT=1))PCO_UNIQUE_ID_MODE")
+    field(ZNAM, "Camera")
+    field(ONAM, "Driver")
+    field(SCAN, "I/O Intr")
+}
+
 
 record(mbbo, "$(P)$(R)BitAlignment") 
 {
@@ -187,6 +251,13 @@ record(mbbi, "$(P)$(R)AcquireMode_RBV")
     field(ONVL, "1")
     field(TWST, "Ext. modulate")
     field(TWVL, "2")
+    field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)FramesErrored_RBV")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PCO_FRAMES_ERRORED")
     field(SCAN, "I/O Intr")
 }
 

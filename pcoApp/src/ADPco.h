@@ -21,10 +21,15 @@
 #define PcoCameraSetupString     "PCO_CAM_SETUP"        // asynParamInt32,   R/W
 #define PcoReadoutModeString     "PCO_READOUT_MODE"     // asynParamInt32,   R/W
 #define PcoBitAlignmentString    "PCO_BIT_ALIGNMENT"    // asynParamInt32,   R/W
+#define PcoEmbedTimeStampString  "PCO_EMBED_TIME_STAMP" // asynParamInt32,   R/W
+#define PcoMetaDataString        "PCO_META_DATA"        // asynParamInt32,   R/W
+#define PcoTimeStampModeString   "PCO_TIME_STAMP_MODE"  // asynParamInt32,   R/W
+#define PcoUniqueIdModeString    "PCO_UNIQUE_ID_MODE"   // asynParamInt32,   R/W
 #define PcoRebootCameraString    "PCO_REBOOT_CAM"       // asynParamInt32,   R/W
 #define PcoAcquireModeString     "PCO_ACQ_MODE"         // asynParamInt32,   R/W
 #define PcoDelayTimeString       "PCO_DELAY_TIME"       // asynParamFloat64, R/W
 #define PcoFramePeriodString     "PCO_FRAME_PERIOD"     // asynParamFloat64, R/O
+#define PcoFramesErroredString   "PCO_FRAMES_ERRORED"   // asynParamInt32,   R/O
 #define PcoFramesDroppedString   "PCO_FRAMES_DROPPED"   // asynParamInt32,   R/O
 
 enum {
@@ -65,10 +70,15 @@ private:
     int PcoCameraSetup;
     int PcoReadoutMode;
     int PcoBitAlignment;
+    int PcoEmbedTimeStamp;
+    int PcoMetaData;
+    int PcoTimeStampMode;
+    int PcoUniqueIdMode;
     int PcoRebootCamera;
     int PcoAcquireMode;
     int PcoDelayTime;
     int PcoFramePeriod;
+    int PcoFramesErrored;
     int PcoFramesDropped;
 
     /* Local methods to this class */
@@ -85,6 +95,10 @@ private:
     void validateROI(int *min, int *size, int stepSize, int minSize, int maxSize, bool symmetric, bool keepMin);
     DWORD convertSecondsToTime(double seconds, WORD *timeBase);
     double convertTimeToSeconds(DWORD time, WORD timeBase);
+
+    int bcdToInt(BYTE *bytes, size_t size);
+    asynStatus extractTimeAndIndexFromImage(SHORT bufNumber, double *imageTime, int *imageIndex);
+    asynStatus extractTimeAndIndexFromMetaData(SHORT bufNumber, double *imageTime, int *imageIndex);
 
     std::string cameraId_;
     HANDLE cameraHandle_;

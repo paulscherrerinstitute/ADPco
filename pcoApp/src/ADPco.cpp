@@ -51,6 +51,16 @@
 
 static const char *driverName = "ADPco";
 
+typedef enum {
+    TimeStampCamera,
+    TimeStampEPICS
+} PcoTimeStamp_t;
+
+typedef enum {
+    UniqueIdCamera,
+    UniqueIdDriver
+} PcoUniqueId_t;
+
 #define CHECK_ERROR(errorCode, API) \
     if (errorCode != PCO_NOERROR) { \
         PCO_GetErrorTextSDK(errorCode, errorText, sizeof(errorText)); \
@@ -129,10 +139,15 @@ ADPco::ADPco(const char *portName, const char *cameraId, size_t maxMemory, int p
     createParam(PcoCameraSetupString,     asynParamInt32,   &PcoCameraSetup);
     createParam(PcoReadoutModeString,     asynParamInt32,   &PcoReadoutMode);
     createParam(PcoBitAlignmentString,    asynParamInt32,   &PcoBitAlignment);
+    createParam(PcoEmbedTimeStampString,  asynParamInt32,   &PcoEmbedTimeStamp);
+    createParam(PcoMetaDataString,        asynParamInt32,   &PcoMetaData);
+    createParam(PcoTimeStampModeString,   asynParamInt32,   &PcoTimeStampMode);
+    createParam(PcoUniqueIdModeString,    asynParamInt32,   &PcoUniqueIdMode);
     createParam(PcoRebootCameraString,    asynParamInt32,   &PcoRebootCamera);
     createParam(PcoAcquireModeString,     asynParamInt32,   &PcoAcquireMode);
     createParam(PcoDelayTimeString,       asynParamFloat64, &PcoDelayTime);
     createParam(PcoFramePeriodString,     asynParamFloat64, &PcoFramePeriod);
+    createParam(PcoFramesErroredString,   asynParamInt32,   &PcoFramesErrored);
     createParam(PcoFramesDroppedString,   asynParamInt32,   &PcoFramesDropped);
 
     /* Set initial values of some parameters */
@@ -206,7 +221,12 @@ void ADPco::acquisitionTask()
     int minX, minY, binX, binY;
     int imageMode, imageCounter;
     int numImages, numImagesCounter;
-    int framesDropped;
+    int embedTimeStamp, metaDataMode;
+    int timeStampMode, uniqueIdMode;
+    bool validCameraTimeAndIndex;
+    int lastCameraImageNumber = 0, cameraImageNumber;
+    double cameraImageTime;
+    int framesErrored = 0, framesDropped = 0;
     epicsTimeStamp startTime;
     std::string statusMessage;
     int errorCode;
@@ -246,6 +266,7 @@ void ADPco::acquisitionTask()
                     "%s:%s: We are acquiring\n",
                     driverName, functionName);
 
+            lastCameraImageNumber = 0;
             dims[0] = arraySizeX_;
             dims[1] = arraySizeY_;
             getIntegerParam(ADMinX, &minX);
@@ -253,8 +274,12 @@ void ADPco::acquisitionTask()
             getIntegerParam(ADBinX, &binX);
             getIntegerParam(ADBinY, &binY);
             getIntegerParam(ADAcquire, &acquire);
+            getIntegerParam(PcoEmbedTimeStamp, &embedTimeStamp);
+            getIntegerParam(PcoMetaData, &metaDataMode);
+
             setIntegerParam(ADNumImagesCounter, 0);
             setIntegerParam(ADStatus, ADStatusAcquire);
+            setIntegerParam(PcoFramesErrored, 0);
             setIntegerParam(PcoFramesDropped, 0);
             setIntegerParam(NDArraySizeX, arraySizeX_);
             setIntegerParam(NDArraySizeY, arraySizeY_);
@@ -264,10 +289,13 @@ void ADPco::acquisitionTask()
         }
         epicsTimeGetCurrent(&startTime);
 
+        getIntegerParam(PcoTimeStampMode, &timeStampMode);
+        getIntegerParam(PcoUniqueIdMode, &uniqueIdMode);
         getIntegerParam(ADNumImages, &numImages);
         getIntegerParam(ADImageMode, &imageMode);
         getIntegerParam(NDArrayCounter, &imageCounter);
         getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+        getIntegerParam(PcoFramesErrored, &framesErrored);
         getIntegerParam(PcoFramesDropped, &framesDropped);
 
         this->unlock();
@@ -285,6 +313,9 @@ void ADPco::acquisitionTask()
             }
         }
         #endif
+        validCameraTimeAndIndex = false;
+        cameraImageTime = 0;
+        cameraImageNumber = 0;
         if (errorCode == PCO_NOERROR) {
             DWORD statusDll, statusDrv;
             HANDLE eventHandle;
@@ -301,25 +332,56 @@ void ADPco::acquisitionTask()
                     memcpy(pImage->pData, pData, arraySizeX_ * arraySizeY_ * sizeof(WORD));
                     numImagesCounter++;
                     imageCounter++;
+                    if (embedTimeStamp == 1 || embedTimeStamp == 2) {
+                        validCameraTimeAndIndex = (extractTimeAndIndexFromImage(bufNum, &cameraImageTime, &cameraImageNumber) == asynSuccess);
+                    } else if (metaDataMode) {
+                        validCameraTimeAndIndex = (extractTimeAndIndexFromMetaData(bufNum, &cameraImageTime, &cameraImageNumber) == asynSuccess);
+                    }
+                } else {
+                    CHECK_ERROR(errorCode, "PCO_GetBuffer");
                 }
                 errorCode = PCO_AddBufferEx(cameraHandle_, 0, 0, bufNum,  arraySizeX_, arraySizeY_, sizeof(WORD)*8);
                 CHECK_ERROR(errorCode, "PCO_AddBufferEx");
+            } else {
+                framesErrored++;
+                CHECK_ERROR(errorCode, "PCO_GetBufferStatus");
             }
         } else if ((errorCode & PCO_ERROR_TIMEOUT) != PCO_ERROR_TIMEOUT &&
                    (errorCode & PCO_ERROR_DRIVER_BUFFER_CANCELLED) != PCO_ERROR_DRIVER_BUFFER_CANCELLED) {
-            framesDropped++;
             CHECK_ERROR(errorCode, "PCO_WaitforNextBufferNum");
         }
 
         lock();
+        if (validCameraTimeAndIndex) {
+            int expectedImageCameraNumber = (lastCameraImageNumber + 1) % 100000000;
+            if (cameraImageNumber != expectedImageCameraNumber) {
+                int gap = (cameraImageNumber - expectedImageCameraNumber + 100000000) % 100000000;
+                framesDropped += gap;
+                asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                    "%s:%s: %d frame lost, expected frame number %d, got %d\n",
+                    driverName, functionName, gap, expectedImageCameraNumber, cameraImageNumber);
+            }
+            lastCameraImageNumber = cameraImageNumber;
+        }
         setIntegerParam(NDArrayCounter, imageCounter);
         setIntegerParam(ADNumImagesCounter, numImagesCounter);
+        setIntegerParam(PcoFramesErrored, framesErrored);
         setIntegerParam(PcoFramesDropped, framesDropped);
         getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
 
         if (pImage) {
+            if (uniqueIdMode == UniqueIdCamera && validCameraTimeAndIndex) {
+                pImage->uniqueId = cameraImageNumber;
+            } else {
+                pImage->uniqueId = imageCounter;
+            }
+
             updateTimeStamp(&pImage->epicsTS);
-            pImage->timeStamp = pImage->epicsTS.secPastEpoch + pImage->epicsTS.nsec/1e9;
+            if (timeStampMode == TimeStampCamera && validCameraTimeAndIndex) {
+                pImage->timeStamp = cameraImageTime;
+            } else {
+                pImage->timeStamp = pImage->epicsTS.secPastEpoch + pImage->epicsTS.nsec/1e9;
+            }
 
             // Get any attributes that have been defined for this driver        
             getAttributes(pImage->pAttributeList);
@@ -332,7 +394,8 @@ void ADPco::acquisitionTask()
         }
 
         // See if acquisition is done if we are in single or multiple mode
-        if ((imageMode == ADImageSingle && numImagesCounter > 0) || ((imageMode == ADImageMultiple) && (numImagesCounter >= numImages))) {
+        if ((imageMode == ADImageSingle && numImagesCounter > 0) ||
+            ((imageMode == ADImageMultiple) && (numImagesCounter >= numImages))) {
             acquire = 0;
             setIntegerParam(ADAcquire, acquire);
             stopAcquisition();
@@ -761,7 +824,23 @@ asynStatus ADPco::getCameraInfo()
     if (status == asynSuccess) {
         setIntegerParam(PcoAcquireMode, acquireMode);
     }
- 
+
+    WORD timestampMode;
+    errorCode = PCO_GetTimestampMode(cameraHandle_, &timestampMode);
+    CHECK_ERROR(errorCode, "PCO_GetTimestampMode");
+    if (status == asynSuccess) {
+        setIntegerParam(PcoEmbedTimeStamp, timestampMode);
+    }
+
+    if (pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_METADATA) {
+        WORD metaDataMode, dataSize, dataVersion;
+        errorCode = PCO_GetMetaDataMode(cameraHandle_, &metaDataMode, &dataSize, &dataVersion);
+        CHECK_ERROR(errorCode, "PCO_GetMetaDataMode");
+        if (status == asynSuccess) {
+            setIntegerParam(PcoMetaData, metaDataMode);
+        }
+    }
+
     WORD interfaceType=2, format=0, reserved1=0, reserved2=0;
     errorCode = PCO_GetInterfaceOutputFormat(cameraHandle_, &interfaceType, &format, &reserved1, &reserved2);
     if (errorCode == PCO_NOERROR) {
@@ -849,6 +928,76 @@ double ADPco::convertTimeToSeconds(DWORD time, WORD timeBase)
 
     /* It should never reach here. */
     return (double)time;
+}
+
+/* Convert a 4-byte LSB BCD array to 32-bit unsigned integer */
+int ADPco::bcdToInt(BYTE *bytes, size_t size)
+{
+    int result = 0;
+    for (size_t i=0; i<std::min<size_t>(size,4); i++) {
+        BYTE highNibble = (bytes[i] & 0xF0) >> 4;
+        BYTE lowNibble = bytes[i] & 0x0F;
+        result += (lowNibble + highNibble * 10) * pow(100, i);
+    }
+    return result;
+}
+
+asynStatus ADPco::extractTimeAndIndexFromImage(SHORT bufNumber, double *imageTime, int *imageIndex)
+{
+    int status;
+    int errorCode = 0;
+    char errorText[100] = {0};
+    static const char *functionName = "extractTimeAndIndexFromImage";
+
+    PCO_TIMESTAMP_STRUCT pco_timestamp = {0};
+    pco_timestamp.wSize = sizeof(pco_timestamp);
+    errorCode = PCO_GetTimeStamp(cameraHandle_, bufNumber, NULL, &pco_timestamp);
+    CHECK_ERROR(errorCode, "PCO_GetTimeStamp");
+    if (errorCode != PCO_NOERROR)
+        return asynError;
+
+    struct tm cameraTime = {0};
+    cameraTime.tm_year = pco_timestamp.wYear - 1900;
+    cameraTime.tm_mon  = pco_timestamp.wMonth - 1;
+    cameraTime.tm_mday = pco_timestamp.wDay;
+    cameraTime.tm_hour = pco_timestamp.wHour;
+    cameraTime.tm_min  = pco_timestamp.wMinute;
+    cameraTime.tm_sec  = pco_timestamp.wSecond;
+
+    *imageTime = mktime(&cameraTime) + pco_timestamp.dwMicroSeconds * 1e-6;
+
+    *imageIndex = pco_timestamp.dwImgCounter;
+
+    return asynSuccess;
+}
+
+asynStatus ADPco::extractTimeAndIndexFromMetaData(SHORT bufNumber, double *imageTime, int *imageIndex)
+{
+    int status;
+    int errorCode = 0;
+    char errorText[100] = {0};
+    static const char *functionName = "extractTimeAndIndexFromMetaData";
+
+    PCO_METADATA_STRUCT pco_metadata = {0};
+    pco_metadata.wSize = sizeof(PCO_METADATA_STRUCT);
+    errorCode = PCO_GetMetaData(cameraHandle_, bufNumber, &pco_metadata, 0, 0);
+    CHECK_ERROR(errorCode, "PCO_GetMetaData");
+    if (errorCode != PCO_NOERROR)
+        return asynError;
+
+    struct tm cameraTime = {0};
+    cameraTime.tm_year = bcdToInt(&pco_metadata.bIMAGE_TIME_YEAR_BCD, 1) + 2000 - 1900;
+    cameraTime.tm_mon  = bcdToInt(&pco_metadata.bIMAGE_TIME_MON_BCD, 1) - 1;
+    cameraTime.tm_mday = bcdToInt(&pco_metadata.bIMAGE_TIME_DAY_BCD, 1);
+    cameraTime.tm_hour = bcdToInt(&pco_metadata.bIMAGE_TIME_HOUR_BCD, 1);
+    cameraTime.tm_min  = bcdToInt(&pco_metadata.bIMAGE_TIME_MIN_BCD, 1);
+    cameraTime.tm_sec  = bcdToInt(&pco_metadata.bIMAGE_TIME_SEC_BCD, 1);
+
+    *imageTime = mktime(&cameraTime) + bcdToInt(pco_metadata.bIMAGE_TIME_US_BCD, 3) * 1e-6;
+
+    *imageIndex = bcdToInt(pco_metadata.bIMAGE_COUNTER_BCD, 4);
+
+    return asynSuccess;
 }
 
 /** Called when asyn clients call pasynInt32->write().
@@ -1003,6 +1152,17 @@ asynStatus ADPco::writeInt32(asynUser *pasynUser, epicsInt32 value)
         errorCode = PCO_SetAcquireMode(cameraHandle_, value);
         CHECK_ERROR(errorCode, "PCO_SetAcquireMode");
         status |= armCamera();
+    } else if (function == PcoEmbedTimeStamp) {
+        errorCode = PCO_SetTimestampMode(cameraHandle_, value);
+        CHECK_ERROR(errorCode, "PCO_SetTimestampMode");
+        status |= armCamera();
+    } else if (function == PcoMetaData) {
+        if (pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_METADATA) {
+            WORD dataSize, dataVersion;
+            errorCode = PCO_SetMetaDataMode(cameraHandle_, value, &dataSize, &dataVersion);
+            CHECK_ERROR(errorCode, "PCO_SetMetaDataMode");
+            status |= armCamera();
+        }
     } else if (function == PcoRebootCamera) {
         setIntegerParam(PcoRebootCamera, 0);
 
@@ -1181,6 +1341,25 @@ asynStatus ADPco::readEnum(asynUser *pasynUser, char *strings[], int values[], i
             values[*nIn] = 0xFFFF;
             severities[*nIn] = 0;
             (*nIn)++;
+        }
+        return asynSuccess;
+    } else if (function == PcoEmbedTimeStamp) {
+        *nIn = 0;
+        strings[*nIn] = epicsStrDup("Off"); values[*nIn] = 0; severities[*nIn] = 0; (*nIn)++;
+        if ( (pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_NO_TIMESTAMP) == 0) {
+            if ( (pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_TIMESTAMP_ASCII_ONLY) == 0) {
+                strings[*nIn] = epicsStrDup("BCD"); values[*nIn] = 1; severities[*nIn] = 0; (*nIn)++;
+                strings[*nIn] = epicsStrDup("BCD+ASCII"); values[*nIn] = 2; severities[*nIn] = 0; (*nIn)++;
+            } else {
+                strings[*nIn] = epicsStrDup("ASCII"); values[*nIn] = 3; severities[*nIn] = 0; (*nIn)++;
+            }
+        }
+        return asynSuccess;
+    } else if (function == PcoMetaData) {
+        *nIn = 0;
+        strings[*nIn] = epicsStrDup("Off"); values[*nIn] = 0; severities[*nIn] = 0; (*nIn)++;
+        if (pcoSensor_.strDescription.dwGeneralCapsDESC1 & GENERALCAPS1_METADATA) {
+            strings[*nIn] = epicsStrDup("On"); values[*nIn] = 1; severities[*nIn] = 0; (*nIn)++;
         }
         return asynSuccess;
     }
