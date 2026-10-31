@@ -1402,6 +1402,13 @@
   </widget>
   <widget type="action_button" version="3.0.0">
     <name>message button #287</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>$(P)$(R)Acquire</pv_name>
+        <value>1</value>
+        <description>Write</description>
+      </action>
+    </actions>
     <pv_name>$(P)$(R)Acquire</pv_name>
     <text>Start</text>
     <x>539</x>
@@ -1415,6 +1422,13 @@
   </widget>
   <widget type="action_button" version="3.0.0">
     <name>message button #290</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>$(P)$(R)Acquire</pv_name>
+        <value>0</value>
+        <description>Write</description>
+      </action>
+    </actions>
     <pv_name>$(P)$(R)Acquire</pv_name>
     <text>Stop</text>
     <x>606</x>
@@ -1735,6 +1749,13 @@
   </widget>
   <widget type="action_button" version="3.0.0">
     <name>message button #356</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>$(P)$(R)TriggerSoftware</pv_name>
+        <value>1</value>
+        <description>Write</description>
+      </action>
+    </actions>
     <pv_name>$(P)$(R)TriggerSoftware</pv_name>
     <text>Trigger</text>
     <x>125</x>
@@ -1861,6 +1882,13 @@
   </widget>
   <widget type="action_button" version="3.0.0">
     <name>message button #383</name>
+    <actions>
+      <action type="write_pv">
+        <pv_name>$(P)$(R)RebootCamera</pv_name>
+        <value>1</value>
+        <description>Write</description>
+      </action>
+    </actions>
     <pv_name>$(P)$(R)RebootCamera</pv_name>
     <text>Reboot</text>
     <x>870</x>
